@@ -84,9 +84,9 @@ const PDFViewer = ({ route }: any) => {
       />
 
       {/* Edit Button */}
-      <TouchableOpacity style={styles.editButton} onPress={handleEditPress}>
-        <EditSVG width={20} height={20} color="#fff" />
-      </TouchableOpacity>
+      {/* <TouchableOpacity  style={styles.editButton} onPress={handleEditPress}>
+        <EditSVG  width={20} height={20} color="#fff" />
+      </TouchableOpacity> */}
 
       {/* PDF/Image Viewer */}
       {pdfData?.type.includes('image') ? (

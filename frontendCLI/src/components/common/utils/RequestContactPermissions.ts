@@ -53,11 +53,13 @@ export const requestContactsPermission = async () => {
   return true;
 };
 
+/**
+ * Fetch all contacts
+ */
 export const fetchContacts = async () => {
   try {
     const contacts = await Contacts.getAll();
-    console.log("Fetched Contacts:", contacts);
-    Alert.alert("Contacts Fetched", `Total Contacts: ${contacts.length}`);
+    console.log("Fetched Contacts:", contacts.length);
     return contacts;
   } catch (error) {
     console.warn("Error fetching contacts:", error);
@@ -65,6 +67,9 @@ export const fetchContacts = async () => {
   }
 };
 
+/**
+ * Add New Contact (with duplicate check and override support)
+ */
 export const addNewContact = async (
   name: string,
   phoneNumber: string,
@@ -80,61 +85,125 @@ export const addNewContact = async (
   dob?: string,
   website?: string,
   note?: string
-) => {
+): Promise<{ status: "success" | "error" | "cancelled", data: any }> => {
   try {
-    // Check if the contact already exists
-    // const existingContacts = await Contacts.getAll();
-    // const isDuplicate = existingContacts.some(contact =>
-    //   contact.phoneNumbers?.some(phone => phone.number === phoneNumber)
-    // );
+    const existingContacts = await fetchContacts();
 
-    // if (isDuplicate) {
-    //   return {
-    //     status: "error",
-    //     data: "Contact already exists in the phone.",
-    //   };
-    // }
+    const existingContact = existingContacts.find(contact =>
+      contact.phoneNumbers?.some(phone => phone.number.replace(/\s+/g, '') === phoneNumber.replace(/\s+/g, ''))
+    );
 
-    // Creating new contact
-    const newContact: Partial<any> = {
-      givenName: name,
-      phoneNumbers: [{ label: "mobile", number: phoneNumber }],
-      ...(alternatePhone && { phoneNumbers: [{ label: "work", number: alternatePhone }] }),
-      ...(email && { emailAddresses: [{ label: "work", email }] }),
-      ...(company && { company }),
-      ...(jobTitle && { jobTitle }),
-      ...(address && {
-        postalAddresses: [
-          {
-            label: "home",
-            formattedAddress: address,
-            street: address,
-            city,
-            state,
-            postCode: pincode,
-            country,
-          },
+    if (existingContact) {
+      // If contact exists, ask if the user wants to update
+      return new Promise((resolve) => {
+        Alert.alert(
+          "Contact Already Exists",
+          "This contact already exists. Do you want to update it?",
+          [
+            {
+              text: "No",
+              style: "cancel",
+              onPress: () => resolve({ status: "cancelled", data: "User choose not to override contact." }),
+            },
+            {
+              text: "Yes",
+              onPress: async () => {
+                try {
+                  const updatedContact : any = {
+                    ...existingContact,
+                    givenName: name, // Always update name
+                    phoneNumbers: [
+                      { label: "mobile", number: phoneNumber },
+                      ...(alternatePhone ? [{ label: "work", number: alternatePhone }] : []),
+                    ],
+                    emailAddresses: email ? [{ label: "work", email }] : existingContact.emailAddresses,
+                    company: company || existingContact.company,
+                    jobTitle: jobTitle || existingContact.jobTitle,
+                    postalAddresses: address ? [{
+                      label: "home",
+                      formattedAddress: address,
+                      street: address,
+                      city: city ?? existingContact?.postalAddresses?.[0]?.city,
+                      state: state ?? existingContact?.postalAddresses?.[0]?.state,
+                      postCode: pincode ?? existingContact?.postalAddresses?.[0]?.postCode,
+                      country: country ?? existingContact?.postalAddresses?.[0]?.country,
+                    }] : existingContact?.postalAddresses,
+                    birthday: dob ? {
+                      day: parseInt(dob.split("-")[0]),
+                      month: parseInt(dob.split("-")[1]),
+                      year: parseInt(dob.split("-")[2]),
+                    } : existingContact.birthday,
+                    urlAddresses: website ? [{ label: "website", url: website }] : existingContact.urlAddresses,
+                    note: note || existingContact.note,
+                  };
+
+                  await Contacts.updateContact(updatedContact);
+
+                  resolve({
+                    status: "success",
+                    data: "Contact updated successfully.",
+                  });
+                } catch (updateError: any) {
+                  console.error("Error updating contact:", updateError);
+                  resolve({
+                    status: "error",
+                    data: updateError?.message || "Failed to update contact.",
+                  });
+                }
+              },
+            },
+          ],
+          { cancelable: false }
+        );
+      });
+    } else {
+      // If contact does not exist, create a new one
+      const newContact: Partial<any> = {
+        givenName: name,
+        phoneNumbers: [
+          { label: "mobile", number: phoneNumber },
+          ...(alternatePhone ? [{ label: "work", number: alternatePhone }] : []),
         ],
-      }),
-      ...(dob && { birthday: { day: parseInt(dob.split("-")[0]), month: parseInt(dob.split("-")[1]), year: parseInt(dob.split("-")[2]) } }),
-      ...(website && { urlAddresses: [{ label: "website", url: website }] }),
-      ...(note && { note }),
-    };
+        ...(email && { emailAddresses: [{ label: "work", email }] }),
+        ...(company && { company }),
+        ...(jobTitle && { jobTitle }),
+        ...(address && {
+          postalAddresses: [
+            {
+              label: "home",
+              formattedAddress: address,
+              street: address,
+              city: city ?? '',
+              state: state ?? '',
+              postCode: pincode ?? '',
+              country: country ?? '',
+            },
+          ],
+        }),
+        ...(dob && {
+          birthday: {
+            day: parseInt(dob.split("-")[0]),
+            month: parseInt(dob.split("-")[1]),
+            year: parseInt(dob.split("-")[2]),
+          },
+        }),
+        ...(website && { urlAddresses: [{ label: "website", url: website }] }),
+        ...(note && { note }),
+      };
 
-    const savedContact = await Contacts.addContact(newContact);
-    return {
-      status: "success",
-      data: savedContact,
-    };
+      await Contacts.addContact(newContact);
+
+      return {
+        status: "success",
+        data: "Contact added successfully.",
+      };
+    }
   } catch (error: any) {
+    console.error("Error adding new contact:", error);
     return {
       status: "error",
-      data: error?.message || "Failed to save contact.",
+      data: error?.message || "Failed to add contact.",
     };
   }
 };
-
-
-
-
 

@@ -99,12 +99,13 @@ function DocumentList() {
     getPdfs();
   }, [currentPage]);
 
-  const savePdfData = async (savedData : any) => {
+  const savePdfData = async (savedData: any) => {
     try {
       setSaving(true);
-      let response: any = {};
-      response = await appRequest('pdfdetails', 'create', {
-        data: {values: []},
+
+      // Step 1: Save PDF to server
+      let response: any = await appRequest('pdfdetails', 'create', {
+        data: { values: [] },
         folderId: documentProcessData?.parentId,
         pages: documentProcessData.pages,
         indexing: documentProcessData.indexing || [],
@@ -115,14 +116,27 @@ function DocumentList() {
             type: documentProcessData.type,
           },
         ],
-        extractedData : savedData
+        extractedData: savedData,
       });
 
+      if (response.status !== 'success') {
+        // If PDF saving fails
+        setModalData({
+          isVisible: true,
+          status: 'Error',
+          text: 'Document creation failed.',
+        });
+        return; // STOP the flow here
+      }
 
-      if (response.status === 'success') {
-        const requestResponse = await requestContactsPermission()
-      if(requestResponse){
-        const {status, data} = await addNewContact(
+      // Step 2: Ask for Contacts permission
+      const permissionGranted = await requestContactsPermission();
+      if (!permissionGranted) {
+        // Permission denied, move ahead without saving contact
+        console.log("Contact permission denied, skipping contact saving.");
+      } else {
+        // Step 3: Save contact (handle duplicate inside)
+        const { status, data } = await addNewContact(
           savedData?.name,
           savedData?.phone,
           savedData?.alternate_phone,
@@ -137,25 +151,27 @@ function DocumentList() {
           savedData?.dob,
           savedData?.website
         );
-        if(status === "error"){
+
+        if (status === "error") {
           Alert.alert("Error", String(data) || "Failed to save contact in phone.");
+        } else if (status === "cancelled") {
+          console.log("User chose not to override existing contact.");
+        } else {
+          console.log("Contact saved/updated successfully.");
         }
       }
-        setModalData({
-          isVisible: true,
-          status: 'Success',
-          text: 'Document created successfully.',
-        });
-        closeFormModal();
-        getPdfs();
-      } else {
-        setModalData({
-          isVisible: true,
-          status: 'Error',
-          text: 'Document creation failed.',
-        });
-      }
+
+      // Step 4: After everything
+      setModalData({
+        isVisible: true,
+        status: 'Success',
+        text: 'Document created successfully.',
+      });
+      closeFormModal();
+      getPdfs();
+
     } catch (err: any) {
+      console.error("Save PDF Data Error:", err);
       setModalData({
         isVisible: true,
         status: 'Error',
@@ -165,6 +181,7 @@ function DocumentList() {
       setSaving(false);
     }
   };
+
 
   const processDocumentWithAPI = async (
     base64Data: string,
