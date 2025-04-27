@@ -1,0 +1,62 @@
+{
+    "jobs": {
+        "get": "canGetJob",
+        "delete": "canDeleteJob",
+        "create": "canCreateJob",
+        "update": "canUpdateJob"
+    },
+    "template": {
+        "get": "canGetTemplate",
+        "delete": "canDeleteTemplate",
+        "create": "canCreateTemplate",
+        "update": "canUpdateTemplate"
+    },
+    "project": {
+        "get": "canGetProject",
+        "delete": "canDeleteProject",
+        "create": "canCreateProject",
+        "update": "canUpdateProject"
+    },
+    "roles": {
+        "get": "canGetRole",
+        "delete": "canDeleteRole",
+        "create": "canCreateRole",
+        "update": "canUpdateRole"
+    },
+    "ekyc": {
+        "get": "canGetEkyc",
+        "delete": "canDeleteEkyc",
+        "create": "canCreateEkyc",
+        "update": "canUpdateEkyc"
+    },
+    "domain": {
+        "get": "canGetDomain",
+        "delete": "canDeleteDomain",
+        "create": "canCreateDomain",
+        "update": "canUpdateDomain"
+    },
+    "log": {
+        "get": "canGetLog",
+        "delete": "canDeleteLog",
+        "create": "canCreateLog",
+        "update": "canUpdateLog"
+    },
+    "processdocument": {
+        "get": "canProcessDocument",
+        "delete": "canDeleteDocument",
+        "create": "canCreateDocument",
+        "update": "canUpdateDocument"
+    },
+    "user": {
+        "get": "canGetUser",
+        "delete": "canDeleteUser",
+        "create": "canCreateUser",
+        "update": "canUpdateUser"
+    },
+    "ekycWorkflow": {
+        "create": "canCreateEkycWorkflow",
+        "update": "canUpdateEkycWorkflow",
+        "delete": "canDeleteEkycWorkflow",
+        "get": "canGetEkycWorkflow"
+    }
+}

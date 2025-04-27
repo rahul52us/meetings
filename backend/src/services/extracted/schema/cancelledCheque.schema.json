@@ -1,0 +1,22 @@
+{
+    "fields": {
+        "bankName": {
+            "description": "This is bank name in the cheque"
+        },
+        "bankBranch": {
+            "description": "This is bank branch name in the cheque"
+        },
+        "branchState": {
+            "description": "This is bank branch state in the cheque"
+        },
+        "bankIFSCCode": {
+            "description": "This is bank branch IFSC Code in the cheque"
+        },
+        "bankAccountNo": {
+            "description": "This is account number mentioned in the cheque"
+        },
+        "companyName": {
+            "description": "Registered company name."
+        }
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "fields": {
+        "gstin": {
+            "description": "This is gst number mentioned in the company registration document"
+        },
+        "companyName": {
+            "description": "Registered company name."
+        }
+    }
+}

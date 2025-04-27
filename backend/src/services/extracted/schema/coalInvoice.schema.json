@@ -1,0 +1,27 @@
+{
+    "fields": {
+        "gateInDateTime": {
+            "type": "datetime",
+            "format": "dd-mm-yyyy:hh:mm",
+            "description": "this is the date in date and time for the vehicle"
+        },
+        "doNumber": {"mandatory":true, "max": 10},
+        "vehicleNumber": {
+            "mandatory":true,"description": "this is the vehicle details which is used for sending goods, vehicle could be truck no or something similar"
+        },
+        "vehicleType": {
+            "description": "this is the vehicle type which is used for sending goods, vehicle could be truck or something similar"
+        },
+        "transporter": "",
+        "lrNumber": "",
+        "invoiceNumber": {"mandatory":true, "description":"this is the invoice number or bill number of the invoice"},
+        "invoiceAmount": {"mandatory":true, "description":"this is the invoice amount or net amount of the invoice"},
+        "tareWeight": {"mandatory":true, "description":"value with unit"},
+        "grossWeight": {"mandatory":true, "description":"value with unit"},
+        "netWeight": {"mandatory":true, "description":"value with unit"},
+        "tripStartDateTime": {
+            "type": "datetime",
+            "format": "dd-mm-yyyy:hh:mm"
+        }
+    }
+}

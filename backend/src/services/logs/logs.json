@@ -1,0 +1,142 @@
+{
+    "jobs": {
+        "info": {
+            "statuscode": "200",
+            "message": "Success"
+        },
+        "error": {
+            "statuscode": "400",
+            "message": "Error"
+        },
+        "success": {
+            "statuscode": "201",
+            "message": "Success"
+        }
+    },
+    "template": {
+        "info": {
+            "statuscode": "200",
+            "message": "Success"
+        },
+        "error": {
+            "statuscode": "400",
+            "message": "Error"
+        },
+        "success": {
+            "statuscode": "201",
+            "message": "Success"
+        }
+    },
+    "project": {
+        "info": {
+            "statuscode": "200",
+            "message": "Success"
+        },
+        "error": {
+            "statuscode": "400",
+            "message": "Error"
+        },
+        "success": {
+            "statuscode": "201",
+            "message": "Success"
+        }
+    },
+    "roles": {
+        "info": {
+            "statuscode": "200",
+            "message": "Success"
+        },
+        "error": {
+            "statuscode": "400",
+            "message": "Error"
+        },
+        "success": {
+            "statuscode": "201",
+            "message": "Success"
+        }
+    },
+    "ekyc": {
+        "info": {
+            "statuscode": "200",
+            "message": "Success"
+        },
+        "error": {
+            "statuscode": "400",
+            "message": "Error"
+        },
+        "success": {
+            "statuscode": "201",
+            "message": "Success"
+        }
+    },
+    "domain": {
+        "info": {
+            "statuscode": "200",
+            "message": "Success"
+        },
+        "error": {
+            "statuscode": "400",
+            "message": "Error"
+        },
+        "success": {
+            "statuscode": "201",
+            "message": "Success"
+        }
+    },
+    "log": {
+        "info": {
+            "statuscode": "200",
+            "message": "Success"
+        },
+        "error": {
+            "statuscode": "400",
+            "message": "Error"
+        },
+        "success": {
+            "statuscode": "201",
+            "message": "Success"
+        }
+    },
+    "processdocument": {
+        "info": {
+            "statuscode": "200",
+            "message": "Success"
+        },
+        "error": {
+            "statuscode": "400",
+            "message": "Error"
+        },
+        "success": {
+            "statuscode": "201",
+            "message": "Success"
+        }
+    },
+    "user": {
+        "info": {
+            "statuscode": "200",
+            "message": "Success"
+        },
+        "error": {
+            "statuscode": "400",
+            "message": "Error"
+        },
+        "success": {
+            "statuscode": "201",
+            "message": "Success"
+        }
+    },
+    "ekycWorkflow": {
+        "info": {
+            "statuscode": "200",
+            "message": "Success"
+        },
+        "error": {
+            "statuscode": "400",
+            "message": "Error"
+        },
+        "success": {
+            "statuscode": "201",
+            "message": "Success"
+        }
+    }
+}

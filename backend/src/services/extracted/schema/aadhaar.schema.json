@@ -1,0 +1,41 @@
+{
+    "fields": {
+        "aadhaarnumber": {
+            "description": "This is 12 digits unique aadhaar number only and not VID number",
+            "mandatory": true,
+            "min": 12,
+            "max": 12
+        },
+        "name": {
+            "description": "aadhaar holder name.",
+            "mandatory": true
+        },
+        "dob": {
+            "description": "this is a DOB of aadhaar user",
+            "mandatory": true
+        },
+        "sex": {
+            "description": "this is a gender/sex of aadhaar user ",
+            "mandatory": true
+        },
+        "mobilenumber":{
+            "description": "this is mobile No. of aadhaar user",
+            "mandatory": true
+        },
+        "address":{
+            "description": "this is address for the aadhaar user",
+            "mandatory": true
+        },
+        "fathername":{
+          "description": "this is father's name S/O or C/O or spouse's name H/O or W/O in address"
+        },
+        "pincode":{
+            "description": "this is the indian pincode for the aadhaar user can be part of the address as well", 
+            "mandatory": true
+        },
+        "state":{
+            "description": "this is the indian state for the aadhaar user can be part of the address as well",
+            "mandatory": true
+        }
+    }
+}

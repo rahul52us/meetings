@@ -1,0 +1,108 @@
+{
+    "fields": {
+        "name": {
+            "description": "Full name of the individual as printed on the visiting card.",
+            "mandatory": true
+        },
+        "designation": {
+            "description": "The professional title or job role of the individual within the organization.",
+            "mandatory": false
+        },
+        "company": {
+            "description": "The name of the business, company, or organization the individual represents.",
+            "mandatory": true
+        },
+        "email": {
+            "description": "The official email address for professional communication.",
+            "mandatory": false,
+            "format": "email"
+        },
+        "phone": {
+            "description": "The primary contact number for business inquiries.",
+            "mandatory": true,
+            "min": 10,
+            "max": 15
+        },
+        "alternate_phone": {
+            "description": "An additional contact number, if available, for backup communication.",
+            "mandatory": false,
+            "min": 10,
+            "max": 15
+        },
+        "fax": {
+            "description": "The official fax number of the company or individual, if applicable.",
+            "mandatory": false
+        },
+        "website": {
+            "description": "The official website URL of the company or the individual's personal website.",
+            "mandatory": false,
+            "format": "url"
+        },
+        "address": {
+            "description": "The primary business or office address mentioned on the card.",
+            "mandatory": true
+        },
+        "city": {
+            "description": "The city in which the office or business is located.",
+            "mandatory": true
+        },
+        "state": {
+            "description": "The state or region where the office or business is registered.",
+            "mandatory": true
+        },
+        "pincode": {
+            "description": "The postal code of the business location for mailing purposes.",
+            "mandatory": true,
+            "min": 5,
+            "max": 10
+        },
+        "country": {
+            "description": "The country in which the business or organization operates.",
+            "mandatory": true
+        },
+        "logo": {
+            "description": "A logo image representing the company or individual’s brand identity.",
+            "mandatory": false,
+            "format": "image"
+        },
+        "social_media": {
+            "linkedin": {
+                "description": "The LinkedIn profile URL for professional networking.",
+                "mandatory": false,
+                "format": "url"
+            },
+            "twitter": {
+                "description": "The Twitter profile URL for company updates or professional engagement.",
+                "mandatory": false,
+                "format": "url"
+            },
+            "facebook": {
+                "description": "The Facebook profile or page URL related to the business or individual.",
+                "mandatory": false,
+                "format": "url"
+            },
+            "instagram": {
+                "description": "The Instagram profile URL, if applicable, for branding or marketing.",
+                "mandatory": false,
+                "format": "url"
+            }
+        },
+        "qr_code": {
+            "description": "A QR code link for digital contact sharing or vCard download.",
+            "mandatory": false,
+            "format": "url"
+        },
+        "tagline": {
+            "description": "A brief tagline or slogan representing the company’s mission or values.",
+            "mandatory": false
+        },
+        "industry": {
+            "description": "The category or sector in which the business operates (e.g., IT, Healthcare, Finance).",
+            "mandatory": false
+        },
+        "branch_address": {
+            "description": "The address of a branch office, if different from the primary office location.",
+            "mandatory": false
+        }
+    }
+}

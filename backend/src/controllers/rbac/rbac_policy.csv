@@ -1,0 +1,27 @@
+p, admin, /add,POST
+p, admin, /get,GET
+p, admin, /getcurrent, GET
+p, admin, /getuserpermission, GET
+p, admin, /create,POST
+p, admin, /update/:project_id,PUT
+p, admin, /delete/:project_id, DELETE
+p, admin, /getAll,GET
+p, admin, /get/:project_id, GET
+
+p, admin, /get, GET
+p, admin, /create, POST
+p, admin, /delete/:user_id, DELETE
+p, admin, /update/:user_id, PUT
+
+p, admin, /updatetemplateHandler/:id, PUT
+
+p, admin, /Jobs/createjob, POST
+p, admin, /update/:job_id, PUT
+p, admin, /delete/:job_id, DELETE
+
+
+p, admin, /update/:template_id, PUT
+p, admin, /delete/:template_id, DELETE
+
+p, admin, /update/:id, PUT
+p, admin, /delete/:id, DELETE

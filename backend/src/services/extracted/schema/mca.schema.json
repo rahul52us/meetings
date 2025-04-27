@@ -1,0 +1,28 @@
+{
+    "fields": {
+        "cin": {
+            "description": "This is company identification number mentioned in the company registration document"
+        },
+        "companyName": {
+            "description": "Registered company name."
+        },
+        "pan": {
+            "description": "this is pan number of the registerd company"
+        },
+        "streetAddress": {
+            "description": "this is street address of the the registerd company"
+        },
+        "city":{
+            "description": "this is city of the registerd company city"
+        },
+        "state":{
+            "description": "this is city of the registerd company state"
+        },
+        "country":{
+            "description": "this is city of the registerd company country"
+        },
+        "pin":{
+            "description": "this is the pincode of the registerd company"
+        }
+    }
+}
