@@ -19,8 +19,6 @@ import Files from './routes/files.route'
 import ApiKey from './routes/apikey.route'
 import Logs from './routes/log.route'
 import Extract from './routes/extract.route'
-import MeterReading from './routes/meterreading.route'
-import Stamp from './routes/stamp.route'
 import RequestDemo from "./routes/requestdemo.route";
 import Pdfdetails from "./routes/pdfdetails.route"
 import FileUpload from './routes/fileSystem.route'
@@ -45,8 +43,6 @@ class Server {
     this.app.use("/upload", Files);
     this.app.use("/apikey", ApiKey);
     this.app.use("/logs", Logs);
-    this.app.use("/meterreading", MeterReading);
-    this.app.use("/stamp", Stamp);
     this.app.use("/fileupload", FileUpload);
     this.app.use("/requestdemo", RequestDemo);
     this.app.use("/pdfdetails", Pdfdetails);
