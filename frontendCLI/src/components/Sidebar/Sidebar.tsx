@@ -1,28 +1,27 @@
-import React, {useEffect, useRef} from 'react';
+import React, { useEffect, useRef } from 'react';
+import {
+  Animated,
+  ViewStyle,
+  TouchableWithoutFeedback,
+} from 'react-native';
 import {
   Box,
   VStack,
   Text,
-  HStack,
   Pressable,
-  Divider,
   Button,
+  Avatar,
+  Divider,
 } from 'native-base';
-// import { Ionicons } from '@expo/vector-icons';
-import {useNavigation, useRoute} from '@react-navigation/native';
-import {Animated, ViewStyle, TouchableWithoutFeedback} from 'react-native';
-
-import BackIcon from '../../assets/icons/BackIcon';
-import Home from '../../assets/icons/Home';
-import UserIcon from '../../assets/icons/UserIcon';
-import { BaseScreens, BaseStackNavigationProp } from '../../navigations/BaseStack';
+import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import BackIcon from '../../assets/icons/BackIcon';
+import { BaseScreens, BaseStackNavigationProp } from '../../navigations/BaseStack';
+import { useUser } from '../authGuard/UserContext';
 
 type MenuItem = {
   label: string;
-  icon?: JSX.Element;
-  // route?: AuthScreens.TransportationSelection | AuthScreens.History | AuthScreens.Profile | BaseScreens.UnAuthStack;  // Ensure this matches the keys from RootStackParamList
   onPress: () => void;
   disabled?: boolean;
 };
@@ -30,60 +29,26 @@ type MenuItem = {
 type SidebarProps = {
   visible: boolean;
   onClose: () => void;
+  setCurrentScreen?: any;
 };
 
-const Sidebar = ({visible, onClose}: SidebarProps) => {
-  const {navigate, reset} = useNavigation<BaseStackNavigationProp>();
-  const route = useRoute();
-
+const Sidebar = ({ visible, onClose, setCurrentScreen }: SidebarProps) => {
+  const { accountDetails } = useUser();
+  const { reset } = useNavigation<BaseStackNavigationProp>();
   const slideAnim = useRef(new Animated.Value(-300)).current;
 
-  // Hardcoded values
-  const profileImage =
-    'https://www.pngall.com/wp-content/uploads/12/Avatar-Profile-PNG-Photos.png';
-  const username = 'John Doe';
-
-
   const logout = () => {
-    AsyncStorage.removeItem("auth-token").then(() => {
-      reset({
+    AsyncStorage.removeItem('auth-token')
+      .then(() => {
+        reset({
           index: 0,
-          routes: [{name: BaseScreens.UnAuthStack}],
+          routes: [{ name: BaseScreens.UnAuthStack }],
+        });
+      })
+      .catch(err => {
+        console.error('Error clearing auth token:', err);
       });
-  }).catch(err => {
-      console.error("Error clearing auth token:", err);
-  });  };
-
-  const menuItems: MenuItem[] = [
-    {
-      label: 'Contacts',
-      icon: <Home size={25} />,
-      // route: AuthScreens.TransportationSelection,
-      onPress: () => {
-        if (route.name !== BaseScreens.AuthStack) {
-          // navigate(AuthScreens.TransportationSelection);
-        }
-        slideOut();
-      },
-    },
-    {
-      label: 'Logout',
-      icon: <UserIcon />,
-      // route: BaseScreens.UnAuthStack,
-      onPress: () => {
-        logout();
-        slideOut();
-      },
-    },
-  ];
-
-  useEffect(() => {
-    if (visible) {
-      slideIn();
-    } else {
-      slideOut();
-    }
-  }, [visible]);
+  };
 
   const slideIn = () => {
     Animated.timing(slideAnim, {
@@ -101,66 +66,134 @@ const Sidebar = ({visible, onClose}: SidebarProps) => {
     }).start(() => onClose());
   };
 
+  useEffect(() => {
+    visible ? slideIn() : slideOut();
+  }, [visible]);
+
   const sidebarStyle: ViewStyle = {
-    transform: [{translateX: slideAnim}],
+    transform: [{ translateX: slideAnim }],
     position: 'absolute',
     width: 300,
-    height: 900,
+    height: '100%',
     zIndex: 1000,
-    backgroundColor: 'white',
   };
+
+  const menuItems: MenuItem[] = [
+    {
+      label: 'Dashboard',
+      onPress: () => {
+        setCurrentScreen?.('Dashboard');
+        slideOut();
+      },
+    },
+    {
+      label: 'Job Seekers',
+      onPress: () => {
+        setCurrentScreen?.('JobSeekers');
+        slideOut();
+      },
+    },
+    {
+      label: 'Mentors',
+      onPress: () => {
+        setCurrentScreen?.('Mentors');
+        slideOut();
+      },
+    },
+    {
+      label: 'Employers',
+      onPress: () => {
+        setCurrentScreen?.('Employers');
+        slideOut();
+      },
+    },
+    {
+      label: 'Job List',
+      onPress: () => {
+        setCurrentScreen?.('JobLists');
+        slideOut();
+      },
+    },
+    {
+      label: 'Logout',
+      onPress: () => {
+        logout();
+        slideOut();
+      },
+    },
+  ];
 
   return (
     <>
       {visible && (
-        //overlay
         <TouchableWithoutFeedback onPress={onClose}>
           <Box
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.3)',
-              zIndex: 999,
-            }}
+            position="absolute"
+            top={0}
+            left={0}
+            right={0}
+            bottom={0}
+            bg="rgba(0,0,0,0.4)"
+            zIndex={999}
           />
         </TouchableWithoutFeedback>
       )}
+
       <Animated.View style={sidebarStyle}>
-        <Box p={4} flex={1} borderRightWidth={1} borderColor="gray.200">
+        <Box flex={1} bg="gray.50" pt={10} px={4}>
+          {/* Close Button */}
           <Button
             variant="ghost"
-            onPress={() => slideOut()}
-            size={'sm'}
-            width={'10'}>
+            onPress={slideOut}
+            size="sm"
+            position="absolute"
+            top={4}
+            left={4}
+            _pressed={{ bg: 'gray.200' }}
+          >
             <BackIcon size={20} />
           </Button>
 
-          {/* Profile Section */}
-          {/* <VStack space={3} alignItems="center">
-                        <Avatar
-                            source={{ uri: profileImage }}
-                            size="xl"
-                            borderWidth={2}
-                            borderColor="yellow.400"
-                        />
-                        <Text fontSize="xl" fontWeight="bold">{loggedInUserLoading ? "..." : loggedInUser?.user.name || "NA"}</Text>
-                    </VStack> */}
-
-          {/* Menu Items */}
-          <VStack space={4} mt={8}>
+          {/* Profile Info */}
+          <VStack space={2} alignItems="center" mb={6}>
+            <Avatar
+              source={{
+                uri:
+                  accountDetails?.profileDetails?.profileDetails?.avatar ||
+                  'https://www.pngall.com/wp-content/uploads/12/Avatar-Profile-PNG-Photos.png',
+              }}
+              size="xl"
+              borderColor="primary.500"
+              borderWidth={1}
+              mb={1}
+            />
+            <Text fontSize="lg" fontWeight="bold" color="coolGray.800">
+              {accountDetails?.name || 'Unknown'}
+            </Text>
+            <Text fontSize="xs" color="gray.500">
+              {accountDetails?.username || 'N/A'}
+            </Text>
+            <Text fontSize="xs" color="primary.600">
+              {accountDetails?.role?.toUpperCase() || 'USER'}
+            </Text>
+          </VStack>
+          <Divider mb={4} />
+          <VStack space={2}>
             {menuItems.map((item, index) => (
               <Pressable
-                disabled={item.disabled}
                 key={index}
-                onPress={item.onPress}>
-                <HStack space={4} alignItems="center">
-                  {item?.icon}
-                  <Text fontSize="md">{item.label}</Text>
-                </HStack>
-                {index < menuItems.length - 1 && <Divider mt={4} />}
+                onPress={item.onPress}
+                isDisabled={item.disabled}
+                _pressed={{ bg: 'gray.200' }}
+                bg="white"
+                borderRadius="2xl"
+                px={5}
+                py={3}
+                shadow={1}
+              >
+                <Text fontSize="md" fontWeight="medium" color="coolGray.800">
+                  {item.label}
+                </Text>
               </Pressable>
             ))}
           </VStack>

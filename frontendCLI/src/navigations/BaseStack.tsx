@@ -3,7 +3,8 @@ import { createNativeStackNavigator, NativeStackNavigationProp, NativeStackScree
 import { RouteProp } from '@react-navigation/native';
 import UnAuthStack from './UnAuthStack';
 import AuthGuard from '../components/authGuard/AuthGuard';
-import DocScannerPage from '../DocscannerPage';
+import { UserProvider } from '../components/authGuard/UserContext';
+import HomeLayout from '../HomeLayout';
 
 const Stack = createNativeStackNavigator();
 
@@ -26,9 +27,11 @@ const BaseStack = () => {
         <Stack.Navigator initialRouteName={BaseScreens.AuthStack}>
             <Stack.Screen name={BaseScreens.AuthStack} options={{ headerShown: false }}>
                 {() =>
+                <UserProvider>
                 <AuthGuard>
-                   <DocScannerPage />
+                   <HomeLayout />
                 </AuthGuard>
+                </UserProvider>
                 }
             </Stack.Screen>
             <Stack.Screen name={BaseScreens.UnAuthStack} options={{ headerShown: false }} component={UnAuthStack} />

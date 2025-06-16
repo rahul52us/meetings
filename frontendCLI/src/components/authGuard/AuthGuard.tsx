@@ -3,6 +3,7 @@ import { useNavigation } from '@react-navigation/native';
 import { BaseScreens, BaseStackNavigationProp } from '../../navigations/BaseStack';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { appRequest } from '../../routes';
+import { useUser } from './UserContext';
 
 type Props = {
     children: ReactNode;
@@ -10,31 +11,40 @@ type Props = {
 
 const AuthGuard = ({ children }: Props) => {
     const navigation = useNavigation<BaseStackNavigationProp>();
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const { setAccountDetails, isLoggedIn, setIsLoggedIn } = useUser();
 
     useEffect(() => {
         checkUserLoginStatus();
-    }, [navigation, isLoading, isLoggedIn]);
+    }, []);
 
     const checkUserLoginStatus = async () => {
         try {
-            const response: any = await appRequest('user', 'isLoggedIn');
-            if (response === true) {
-                setIsLoggedIn(true); 
-
+            const loggedIn = await appRequest('user', 'isLoggedIn');
+            if (loggedIn === true) {
+                const response : any = await appRequest('user', 'getUserDetails');
+                console.log('the get accoount details response are', response)
+                if (response && response.status !== "error") {
+                    setAccountDetails(response);
+                    setIsLoggedIn(true)
+                  }
+                else {
+                    setIsLoggedIn(false);
+                    setAccountDetails(null);
+                }
             } else {
-            setIsLoggedIn(false); 
-
+                setIsLoggedIn(false);
+                setAccountDetails(null);
             }
         } catch (err) {
-            console.error("Error checking login status:", err);
+            console.error('AuthGuard error:', err);
             setIsLoggedIn(false);
+            setAccountDetails(null);
         } finally {
             setIsLoading(false);
         }
     };
-    
+
     useEffect(() => {
         if (!isLoggedIn && !isLoading) {
             navigation.reset({
@@ -42,7 +52,7 @@ const AuthGuard = ({ children }: Props) => {
                 routes: [{ name: BaseScreens.UnAuthStack }],
             });
         }
-    }, [isLoading, isLoggedIn, navigation]);
+    }, [isLoggedIn, isLoading]);
 
     if (isLoading) {
         return (

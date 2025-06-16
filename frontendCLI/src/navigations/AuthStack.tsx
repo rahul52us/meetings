@@ -1,5 +1,5 @@
 import React from 'react'
-import DocScannerPage from '../DocscannerPage';
+import DocScannerPage from '../HomeLayout';
 
 
 const AuthStack = () => {

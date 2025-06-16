@@ -1,1027 +1,2622 @@
 {
     "auth": {
-        "signup": {
-            "url": "auth/signup",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json"
-            },
-            "body": {
-                "email": "string",
-                "password": "string"
-            }
+      "login": {
+        "url": "auth/login",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
         },
-        "login": {
-            "url": "auth/login",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json"
-            },
-            "body": {
-                "username": "string",
-                "password": "string"
-            }
-        },
-        "forgotPassword": {
-            "url": "auth/forgotPassword",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json"
-            },
-            "body": {
-                "email": "string"
-            }
-        },
-        "resetPassword": {
-            "url": "auth/resetPassword",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json"
-            },
-            "body": {
-                "token": "string",
-                "password": "string",
-                "confirmPassword": "string"
-            }
-        },
-        "verifyEmail": {
-            "url": "auth/verifyEmail",
-            "method": "GET",
-            "headers": {
-                "Content-Type": "application/json"
-            },
-            "query": {
-                "token": "string"
-            }
+        "body": {
+          "username": "string",
+          "password": "string"
         }
+      },
+      "verifyLoginToken": {
+        "url": "auth/verify/token",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "forgotPassword": {
+        "url": "auth/forgotPassword",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "email": "string"
+        }
+      },
+      "resetPassword": {
+        "url": "auth/resetPassword",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "token": "string",
+          "password": "string",
+          "confirmPassword": "string"
+        }
+      },
+      "verifyEmail": {
+        "url": "auth/verifyEmail",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "query": {
+          "token": "string"
+        }
+      }
     },
     "user": {
-        "isLoggedIn": {
-            "url": "user/isLoggedIn",
-            "method": "GET",
-            "headers": {
-                "Authorization": "Bearer {{token}}",
-                "Content-Type": "application/json"
-            }
-        },
-        "changePassword": {
-            "url": "user/changePassword",
-            "method": "POST",
-            "headers": {
-                "Authorization": "Bearer {{token}}",
-                "Content-Type": "application/json"
-            },
-            "body": {
-                "currentPassword": "string",
-                "newPassword": "string",
-                "confirmPassword": "string",
-                "id": "string"
-            }
-        },
-        "logout": {
-            "url": "user/logout",
-            "method": "DELETE",
-            "headers": {
-                "Authorization": "Bearer {{token}}"
-            }
-        },
-        "getUserDetails": {
-            "url": "user/getAccountDetail",
-            "method": "GET",
-            "headers": {
-              "Content-Type": "application/json",
-              "Authorization": "Bearer {{token}}"
-            },
-            "response": {
-              "statusCode": 200
-            }
-        },
-        "get": {
-            "url": "user/get",
-            "method": "GET",
-            "headers": {
-                "Authorization": "Bearer {{token}}",
-                "Content-Type": "application/json"
-            },
-            "query": {
-                "value": "string"
-            }
-        },
-        "updatePages": {
-            "url": "user/updatePages",
-            "method": "POST",
-            "headers": {
-                "Authorization": "Bearer {{token}}",
-                "Content-Type": "application/json"
-            },
-            "body": {
-                "value": "string"
-            }
-        },
-        "increamentPages": {
-            "url": "user/increamentPageLimit",
-            "method": "GET",
-            "headers": {
-                "Authorization": "Bearer {{token}}",
-                "Content-Type": "application/json"
-            },
-            "query": {
-                "value": "string"
-            }
-        },
-        "create": {
-            "url": "user/create",
-            "method": "POST",
-            "headers": {
-                "Authorization": "Bearer {{token}}",
-                "Content-Type": "application/json"
-            },
-            "body": {
-                "name": "string",
-                "email": "string",
-                "password": "string",
-                "permission": "array",
-                "moNumber": "string",
-                "role": "string"
-            }
-        },
-        "update": {
-            "url": "user/update",
-            "method": "PUT",
-            "headers": {
-                "Authorization": "Bearer {{token}}",
-                "Content-Type": "application/json"
-            },
-            "body": {
-                "name": "string",
-                "moNumber": "string",
-                "email": "string",
-                "role": "string",
-                "permission": "array"
-            }
-        },
-        "delete": {
-            "url": "user/delete",
-            "method": "DELETE",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            }
-        },
-        "getPermissions": {
-            "url": "user/getPermissions",
-            "method": "GET",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "userId": "string"
-            },
-            "response": {
-                "statusCode": 200
-            }
+      "isLoggedIn": {
+        "url": "user/isLoggedIn",
+        "method": "GET",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
         }
+      },
+      "changePassword": {
+        "url": "user/changePassword",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "currentPassword": "string",
+          "newPassword": "string",
+          "confirmPassword": "string",
+          "id": "string"
+        }
+      },
+      "aadharValidation": {
+        "url": "user/aadharValidation",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "details": "string"
+        }
+      },
+      "updateAadharDetails": {
+        "url": "user/updateAadharDetails",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "details": "string"
+        }
+      },
+      "logout": {
+        "url": "user/logout",
+        "method": "DELETE",
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "findUserAndOrganisation": {
+        "url": "user/findUserAndOrganisation",
+        "method": "GET",
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "get": {
+        "url": "user/get",
+        "method": "GET",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "create": {
+        "url": "user/create",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "string",
+          "email": "string",
+          "password": "string",
+          "permission": "array",
+          "moNumber": "string",
+          "role": "string"
+        }
+      },
+      "update": {
+        "url": "user/update",
+        "method": "PUT",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "string",
+          "moNumber": "string",
+          "email": "string",
+          "role": "string",
+          "permission": "array"
+        }
+      },
+      "delete": {
+        "url": "user/delete",
+        "method": "DELETE",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "getPermissions": {
+        "url": "user/getPermissions",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "userId": "string"
+        },
+        "response": {
+          "statusCode": 200
+        }
+      },
+      "getUserDetails": {
+        "url": "user/getAccountDetail",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "response": {
+          "statusCode": 200
+        }
+      },
+      "updateUserDetails": {
+        "url": "user/updateAccountDetails",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "userId": "string"
+        },
+        "response": {
+          "statusCode": 200
+        }
+      },
+      "getUserType": {
+        "url": "organisation/type",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "id": "string",
+          "name": "string"
+        },
+        "response": {
+          "statusCode": 200
+        }
+      }
     },
     "project": {
-        "get": {
-            "url": "project/get",
-            "method": "GET",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "query": {
-                "value": "string"
-            }
+      "get": {
+        "url": "project/get",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
         },
-        "create": {
-            "url": "project/create",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "project_name": "string",
-                "project_description": "string",
-                "team_member_email": "string"
-            }
-        },
-        "update": {
-            "url": "project/update",
-            "method": "PUT",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "name": "string",
-                "description": "string",
-                "members": "string"
-            }
-        },
-        "delete": {
-            "url": "project/delete",
-            "method": "DELETE",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "project_id": "string"
-            }
+        "query": {
+          "value": "string"
         }
+      },
+      "create": {
+        "url": "project/create",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "project_name": "string",
+          "project_description": "string",
+          "team_member_email": "string"
+        }
+      },
+      "update": {
+        "url": "project/update",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "name": "string",
+          "description": "string",
+          "members": "string"
+        }
+      },
+      "delete": {
+        "url": "project/delete",
+        "method": "DELETE",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "project_id": "string"
+        }
+      }
     },
     "role": {
-        "get": {
-            "url": "role/get",
-            "method": "GET",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "query": {
-                "value": "string"
-            }
+      "get": {
+        "url": "role/get",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
         },
-        "create": {
-            "url": "role/create",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "project_name": "string",
-                "project_description": "string",
-                "team_member_email": "string"
-            }
-        },
-        "update": {
-            "url": "role/update",
-            "method": "PUT",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "project_name": "string",
-                "project_description": "string",
-                "team_member_email": "string"
-            },
-            "query": {
-                "project_id": "string",
-                "team_member_email": "string",
-                "permission": "array"
-            }
-        },
-        "delete": {
-            "url": "role/delete",
-            "method": "DELETE",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "project_id": "string"
-            }
+        "query": {
+          "value": "string"
         }
+      },
+      "create": {
+        "url": "role/create",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "project_name": "string",
+          "project_description": "string",
+          "team_member_email": "string"
+        }
+      },
+      "update": {
+        "url": "role/update",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "project_name": "string",
+          "project_description": "string",
+          "team_member_email": "string"
+        },
+        "query": {
+          "project_id": "string",
+          "team_member_email": "string",
+          "permission": "array"
+        }
+      },
+      "delete": {
+        "url": "role/delete",
+        "method": "DELETE",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "project_id": "string"
+        }
+      }
     },
     "jobs": {
-        "get": {
-            "url": "jobs/get",
-            "method": "GET",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "query": {
-                "value": "string"
-            }
+      "get": {
+        "url": "jobs/get",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
         },
-        "create": {
-            "url": "jobs/create",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "name": "string",
-                "is_active": "boolean",
-                "type": "string",
-                "output": {
-                    "format": "string",
-                    "select_files": "string"
-                },
-                "template_file": "string",
-                "scheduled": {
-                    "type": "string",
-                    "startTime": "date",
-                    "runtime": "string"
-                }
-            }
-        },
-        "update": {
-            "url": "jobs/update",
-            "method": "PUT",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "name": "string",
-                "is_active": "boolean",
-                "type": "string",
-                "output": {
-                    "format": "string",
-                    "select_files": "string"
-                },
-                "template_file": "string",
-                "scheduled": {
-                    "type": "string",
-                    "startTime": "date",
-                    "runtime": "string"
-                }
-            },
-            "query": {
-                "name": "string",
-                "id": "string"
-            }
-        },
-        "delete": {
-            "url": "jobs/delete",
-            "method": "DELETE",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "project_id": "string"
-            }
-        },
-        "upload": {
-            "url": "jobs/upload",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "file": "string"
-            }
+        "query": {
+          "value": "string"
         }
+      },
+      "create": {
+        "url": "jobs/create",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "name": "string",
+          "is_active": "boolean",
+          "type": "string",
+          "output": {
+            "format": "string",
+            "select_files": "string"
+          },
+          "template_file": "string",
+          "scheduled": {
+            "type": "string",
+            "startTime": "date",
+            "runtime": "string"
+          }
+        }
+      },
+      "update": {
+        "url": "jobs/update",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "name": "string",
+          "is_active": "boolean",
+          "type": "string",
+          "output": {
+            "format": "string",
+            "select_files": "string"
+          },
+          "template_file": "string",
+          "scheduled": {
+            "type": "string",
+            "startTime": "date",
+            "runtime": "string"
+          }
+        },
+        "query": {
+          "name": "string",
+          "id": "string"
+        }
+      },
+      "delete": {
+        "url": "jobs/delete",
+        "method": "DELETE",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "project_id": "string"
+        }
+      },
+      "upload": {
+        "url": "jobs/upload",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "file": "string"
+        }
+      }
     },
     "template": {
-        "get": {
-            "url": "template/get",
-            "method": "GET",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "query": {
-                "value": "string"
-            }
+      "get": {
+        "url": "template/get",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
         },
-        "create": {
-            "url": "template/create",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "project_name": "string",
-                "project_description": "string",
-                "team_member_email": "string"
-            }
-        },
-        "update": {
-            "url": "template/update",
-            "method": "PUT",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "project_name": "string",
-                "project_description": "string",
-                "team_member_email": "string"
-            },
-            "query": {
-                "project_id": "string",
-                "team_member_email": "string",
-                "permission": "array"
-            }
-        },
-        "delete": {
-            "url": "template/delete",
-            "method": "DELETE",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "project_id": "string"
-            }
-        },
-        "extractData": {
-            "url": "template/extractData",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "type": "string",
-                "method": "string",
-                "values": "object"
-            },
-            "formData": true
-        },
-        "validateData": {
-            "url": "template/validateData",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "type": "string",
-                "method": "string",
-                "values": "object"
-            }
+        "query": {
+          "value": "string"
         }
+      },
+      "create": {
+        "url": "template/create",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "project_name": "string",
+          "project_description": "string",
+          "team_member_email": "string"
+        }
+      },
+      "update": {
+        "url": "template/update",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "project_name": "string",
+          "project_description": "string",
+          "team_member_email": "string"
+        },
+        "query": {
+          "project_id": "string",
+          "team_member_email": "string",
+          "permission": "array"
+        }
+      },
+      "delete": {
+        "url": "template/delete",
+        "method": "DELETE",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "project_id": "string"
+        }
+      },
+      "extractData": {
+        "url": "template/extractData",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "type": "string",
+          "method": "string",
+          "values": "object"
+        },
+        "formData": true
+      },
+      "validateData": {
+        "url": "template/validateData",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "type": "string",
+          "method": "string",
+          "values": "object"
+        }
+      }
     },
     "domain": {
-        "get": {
-            "url": "domain/get",
-            "method": "GET",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "query": {
-                "value": "string"
-            }
+      "get": {
+        "url": "domain/get",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
         },
-        "create": {
-            "url": "domain/create",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "name": "string",
-                "master": "string",
-                "field": [
-                    {
-                        "name": "string",
-                        "validator": "string",
-                        "min": "number",
-                        "max": "number"
-                    }
-                ]
-            }
-        },
-        "update": {
-            "url": "domain/update",
-            "method": "PUT",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "name": "string",
-                "master": "string",
-                "field": [
-                    {
-                        "name": "string",
-                        "validator": "string",
-                        "min": "number",
-                        "max": "number"
-                    }
-                ]
-            }
-        },
-        "delete": {
-            "url": "domain/delete",
-            "method": "DELETE",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "domain_id": "string"
-            }
+        "query": {
+          "value": "string"
         }
+      },
+      "create": {
+        "url": "domain/create",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "name": "string",
+          "master": "string",
+          "field": [
+            {
+              "name": "string",
+              "validator": "string",
+              "min": "number",
+              "max": "number"
+            }
+          ]
+        }
+      },
+      "update": {
+        "url": "domain/update",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "name": "string",
+          "master": "string",
+          "field": [
+            {
+              "name": "string",
+              "validator": "string",
+              "min": "number",
+              "max": "number"
+            }
+          ]
+        }
+      },
+      "delete": {
+        "url": "domain/delete",
+        "method": "DELETE",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "domain_id": "string"
+        }
+      }
     },
     "ekycworkflow": {
-        "extractData": {
-            "url": "ekycworkflow/extractData",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "type": "string",
-                "method": "string",
-                "values": "object"
-            }
+      "extractData": {
+        "url": "ekycworkflow/extractData",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
         },
-        "validateData": {
-            "url": "ekycworkflow/validateData",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "type": "string",
-                "method": "string",
-                "values": "object"
-            }
-        },
-        "get": {
-            "url": "ekycworkflow/get",
-            "method": "GET",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "query": {
-                "value": "string"
-            }
-        },
-        "create": {
-            "url": "ekycworkflow/create",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "name": "string",
-                "field": "string",
-                "master": "string",
-                "document": "string",
-                "sample": "string",
-                "identifier": "string",
-                "fields": "string",
-                "steps": "object[]"
-            }
-        },
-        "update": {
-            "url": "ekycworkflow/update",
-            "method": "PUT",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "name": "string",
-                "master": "string",
-                "field": [
-                    {
-                        "name": "string",
-                        "validator": "string",
-                        "min": "number",
-                        "max": "number"
-                    }
-                ]
-            }
-        },
-        "delete": {
-            "url": "ekycworkflow/delete",
-            "method": "DELETE",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "_id": "string"
-            }
-        },
-        "fillForm": {
-            "url": "ekycworkflow/fillForm",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "type": "string",
-                "method": "string",
-                "values": "object"
-            }
+        "body": {
+          "type": "string",
+          "method": "string",
+          "values": "object"
         }
-    },
-    "extract": {
-        "get": {
-            "url": "extract/get",
-            "method": "GET",
-            "headers": {
-                "Content-Type": "application/json"
-            },
-            "query": {
-                "id": "string"
-            }
+      },
+      "validateData": {
+        "url": "ekycworkflow/validateData",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
         },
-        "save": {
-            "url": "extract/save",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-
-            },
-            "body": {
-                "filename": "string",
-                "file": "buffer"
-            }
-        },
-        "extract": {
-            "url": "extract/extract",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "type": "string",
-                "file": "buffer"
-            }
+        "body": {
+          "type": "string",
+          "method": "string",
+          "values": "object"
         }
-    },
-    "pdfdetails": {
-        "get": {
-            "url": "pdfdetails/get",
-            "method": "GET",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "query": {
-                "id": "string"
-            }
+      },
+      "get": {
+        "url": "ekycworkflow/get",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
         },
-        "getFolder": {
-            "url": "pdfdetails/folder/get",
-            "method": "GET",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "query": {
-                "id": "string"
-            }
-        },
-        "create": {
-            "url": "pdfdetails/create",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "filename": "string",
-                "file": "buffer"
-            }
-        },
-        "createFolder": {
-            "url": "pdfdetails/folder/create",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "filename": "string",
-                "file": "buffer"
-            }
-        },
-        "extractedFiles":{
-         "url": "pdfdetails//get/ExtractedFiles",
-         "method": "GET",
-         "headers": {
-            "Content-Type": "application/json",
-            "Authorization":"Bearer {{token}}"
-         },
-         "query":{
-            "value":"string"
-         }
-        },
-        "update": {
-            "url": "pdfdetails/update",
-            "method": "PUT",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "filename": "string",
-                "file": "buffer"
-            }
-        },
-        "updateExtracedData": {
-            "url": "pdfdetails/updateExtracedData",
-            "method": "PUT",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "filename": "string",
-                "file": "buffer"
-            }
-        },
-        "updateStatus": {
-            "url": "pdfdetails/updateStatus",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "filename": "string",
-                "file": "buffer"
-            }
-        },
-        "getById":{
-            "url": "pdfdetails/getById",
-            "method": "GET",
-            "headers":{
-                 "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "query": {
-                "id": "string"
-            }
-        },
-        "save": {
-            "url": "pdfdetails/save",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "filename": "string",
-                "file": "buffer"
-            }
-        },
-        "delete": {
-            "url": "Pdfdetails",
-            "method": "DELETE",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "type": "string",
-                "file": "buffer"
-            }
-        },
-        "deleteFile": {
-            "url": "Pdfdetails/file",
-            "method": "DELETE",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "type": "string",
-                "file": "buffer"
-            }
-        },
-        "extract": {
-            "url": "Pdfdetails/extract",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json"
-            },
-            "body": {
-                "type": "string",
-                "file": "buffer"
-            }
-        },
-        "totalPdf":{
-            "url": "pdfdetails/totalPdf",
-            "method": "GET",
-            "headers": {
-                "Content-Type": "application/json",
-                 "Authorization": "Bearer {{token}}"
-            },
-            "query":{
-                "value":"string"
-            }
-        },
-        "pdfCreationChart":{
-            "url":"pdfdetails/pdfCreationChart",
-            "method":"GET",
-            "headers": {
-                "Content-Type": "application/json",
-                 "Authorization": "Bearer {{token}}"
-            },
-            "query":{
-                "value":"string"
-            }
+        "query": {
+          "value": "string"
         }
+      },
+      "create": {
+        "url": "ekycworkflow/create",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "name": "string",
+          "field": "string",
+          "master": "string",
+          "document": "string",
+          "sample": "string",
+          "identifier": "string",
+          "fields": "string",
+          "steps": "object[]"
+        }
+      },
+      "update": {
+        "url": "ekycworkflow/update",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "name": "string",
+          "master": "string",
+          "field": [
+            {
+              "name": "string",
+              "validator": "string",
+              "min": "number",
+              "max": "number"
+            }
+          ]
+        }
+      },
+      "delete": {
+        "url": "ekycworkflow/delete",
+        "method": "DELETE",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "_id": "string"
+        }
+      },
+      "fillForm": {
+        "url": "ekycworkflow/fillForm",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "type": "string",
+          "method": "string",
+          "values": "object"
+        }
+      }
     },
     "ekyc": {
-        "get": {
-            "url": "ekyc/get",
-            "method": "GET",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "query": {
-                "value": "string"
-            }
+      "get": {
+        "url": "ekyc/get",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
         },
-        "create": {
-            "url": "ekyc/create",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "name": "string",
-                "type": "string",
-                "domain": "string",
-                "requestor": "string",
-                "status": "string"
-            }
-        },
-        "update": {
-            "url": "ekyc/update",
-            "method": "PUT",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "name": "string",
-                "type": "string",
-                "document": "string"
-            }
-        },
-        "delete": {
-            "url": "ekyc/delete",
-            "method": "DELETE",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "_id": "string"
-            }
+        "query": {
+          "value": "string"
         }
+      },
+      "create": {
+        "url": "ekyc/create",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "name": "string",
+          "type": "string",
+          "domain": "string",
+          "requestor": "string",
+          "status": "string"
+        }
+      },
+      "update": {
+        "url": "ekyc/update",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "name": "string",
+          "type": "string",
+          "document": "string"
+        }
+      },
+      "delete": {
+        "url": "ekyc/delete",
+        "method": "DELETE",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "_id": "string"
+        }
+      }
     },
     "notification": {
-        "get": {
-            "url": "notification/get",
-            "method": "GET",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "query": {
-                "value": "string"
-            }
+      "get": {
+        "url": "notification/get",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
         }
+      }
     },
     "processdocument": {
-        "get": {
-            "url": "processdocument/get",
-            "method": "GET",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "query": {
-                "value": "string"
-            }
+      "get": {
+        "url": "processdocument/get",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
         },
-        "create": {
-            "url": "processdocument/create",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "project_name": "string",
-                "project_description": "string",
-                "team_member_email": "string"
-            }
+        "query": {
+          "value": "string"
         }
-    },
-    "dashboard":{
-        "gettemplate":{
-            "url":"dashboard/gettemplate",
-            "method":"GET",
-            "headers":{
-                "Authorization":"Bearer {{token}}",
-                "Content-Type":"application/json"
-            },
-            "query":{
-                "value":"string"
-            }
-        }
-    },
-    "meterreading": {
-        "metercount": {
-            "url": "meterreading/metercount",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                 "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "type": "string",
-                "file": "buffer"
-            }
-        },
-        "wireQuality":{
-            "url": "meterreading/wireQuality",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                 "Authorization": "Bearer {{token}}"
-            },
-            "body": {
-                "type": "string",
-                "file": "buffer"
-            }
-        }
-},
-"Stamp": {
-    "StampDetection": {
-        "url": "stamp/detection",
+      },
+      "create": {
+        "url": "processdocument/create",
         "method": "POST",
         "headers": {
-            "Content-Type": "application/json",
-             "Authorization": "Bearer {{token}}"
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
         },
         "body": {
-            "type": "string",
-            "file": "buffer"
+          "project_name": "string",
+          "project_description": "string",
+          "team_member_email": "string"
         }
-    }
-},
-"Signform": {
-    "Signform": {
-        "url": "meterreading/metercount",
-        "method": "POST",
-        "headers": {
-            "Content-Type": "application/json",
-             "Authorization": "Bearer {{token}}"
-        },
-        "body": {
-            "type": "string",
-            "file": "buffer"
-        }
+      }
     },
-    "signatureVerification": {
-        "url": "sign/verification",
+    "purchaseorder": {
+      "get": {
+        "url": "purchaseorder/get",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "status": {
+        "url": "purchaseorder/status",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "getdetails": {
+        "url": "purchaseorder/getdetails",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "create": {
+        "url": "purchaseOrder/create",
         "method": "POST",
         "headers": {
-            "Content-Type": "application/json",
-             "Authorization": "Bearer {{token}}"
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
         },
         "body": {
-            "file": "buffer"
+          "purchaseOrder": "string",
+          "references": "string",
+          "date": "Date",
+          "amount": "Number"
         }
+      },
+      "updateItems": {
+        "url": "purchaseOrder/update/items",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "values": "object"
+        }
+      },
+      "updateLineItems": {
+        "url": "purchaseOrder/update/lineitems",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "values": "object"
+        }
+      },
+      "update": {
+        "url": "purchaseorder/update/status",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      }
     },
-    "signatureDetection": {
-        "url": "sign/detection",
+    "invoice": {
+      "get": {
+        "url": "invoice/get",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "getstatus": {
+        "url": "invoice/getstatus",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "getdetails": {
+        "url": "invoice/getdetails",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "create": {
+        "url": "invoice/create",
         "method": "POST",
         "headers": {
-            "Content-Type": "application/json",
-             "Authorization": "Bearer {{token}}"
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
         },
         "body": {
-            "file": "buffer"
+          "invoice": "string",
+          "date": "Date",
+          "balance": "Number",
+          "files": "string",
+          "status": "string"
         }
-    }
-},
-"filesystem": {
-    "get": {
+      },
+      "update": {
+        "url": "invoice/update",
+        "method": "PUT",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "status": "string",
+          "deductions": "object"
+        }
+      },
+      "upload": {
+        "url": "invoice/upload",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "files": "string"
+        }
+      },
+      "extract": {
+        "url": "invoice/extract",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "file": "buffer"
+        }
+      },
+      "status": {
+        "url": "invoice/status",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "status": "array"
+        }
+      },
+      "chartData": {
+        "url": "invoice/get/chartData",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "startDate": "string",
+          "endData": "string",
+          "status": "string"
+        }
+      },
+      "count": {
+        "url": "invoice/count",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "outstandinginvoices": {
+        "url": "invoice/outstandinginv",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      }
+    },
+    "timesheet": {
+      "get": {
+        "url": "timesheet/get",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      },
+      "getpage": {
+        "url": "timesheet/getpage",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      },
+      "deletePendingTimeSheet": {
+        "url": "timesheet",
+        "method": "DELETE",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "submitPendingRequest": {
+        "url": "timesheet/submitted",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "create": {
+        "url": "timesheet/create",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "date": "Date",
+          "rm": "string",
+          "workDomain": "string",
+          "workType": "string",
+          "attendence": "string",
+          "billingType": "string",
+          "inPunch": "string",
+          "outPunch": "string",
+          "duration": "string",
+          "comment": "string"
+        }
+      },
+      "count": {
+        "url": "timesheet/count",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "update": {
+        "url": "timesheet/update/status",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      },
+      "getexcel": {
+        "url": "timesheet/getexcel",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "date": "Date",
+          "rm": "string",
+          "workDomain": "string",
+          "workType": "string",
+          "attendence": "string",
+          "billingType": "string",
+          "inPunch": "string",
+          "outPunch": "string",
+          "duration": "string",
+          "comment": "string"
+        }
+      }
+    },
+    "payments": {
+      "get": {
+        "url": "payments/get",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "create": {
+        "url": "payments/create",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "payments": "string",
+          "references": "string",
+          "date": "Date",
+          "amount": "string",
+          "mode": "string",
+          "unusedamount": "string"
+        }
+      },
+      "paymentsdone": {
+        "url": "payments/paymentsdone",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "paymentsoutstanding": {
+        "url": "payments/paymentsoutstanding",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "paymentdetails": {
+        "url": "payments/paymentdetails",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      }
+    },
+    "vendor": {
+      "get": {
+        "url": "vendor/get",
+        "method": "GET",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "query": {
+          "authToken": "string"
+        }
+      },
+      "getvendorcode": {
+        "url": "vendor/getvendorcode",
+        "method": "GET",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "query": {
+          "authToken": "string"
+        }
+      },
+      "create": {
+        "url": "vendor/create",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "string",
+          "email": "string",
+          "gstin": "string",
+          "pan": "string",
+          "password": "string",
+          "moNumber": "string",
+          "description": "string"
+        }
+      },
+      "signup": {
+        "url": "vendor/signup",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "token": ""
+        }
+      }
+    },
+    "certificate": {
+      "get": {
+        "url": "certificate/get",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "getTds": {
+        "url": "certificate/get/tds",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      },
+      "create": {
+        "url": "certificate/create",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "certificates": "string"
+        }
+      },
+      "update": {
+        "url": "certificate/update/status",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      },
+      "getDash": {
+        "url": "certificate/get/dashCertificate",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      },
+      "getstatus": {
+        "url": "certificate/getstatus",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      }
+    },
+    "filesystem": {
+      "get": {
         "url": "fileupload/getFile",
         "method": "GET",
         "headers": {
-            "Content-Type": "application/json"
+          "Content-Type": "application/json"
         },
         "query": {
-            "id": "string"
+          "id": "string"
         }
+      },
+      "upload": {
+        "url": "fileupload/upload",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "filename": "string",
+          "file": "buffer"
+        }
+      }
+    },
+    "extract": {
+      "get": {
+        "url": "extract/get",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "query": {
+          "id": "string"
+        }
+      },
+      "save": {
+        "url": "extract/save",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "filename": "string",
+          "file": "buffer"
+        }
+      },
+      "extract": {
+        "url": "extract/extract",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "type": "string",
+          "file": "buffer"
+        }
+      }
+    },
+    "statements": {
+      "get": {
+        "url": "statements/get",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "getaccount": {
+        "url": "statements/getaccount",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      }
+    },
+    "profile": {
+      "get": {
+        "url": "profile/get",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "create": {
+        "url": "profile/create",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "string",
+          "email": "string",
+          "gstTreatment": "string",
+          "businessGSTIN": "string",
+          "billingAddressArea": "string",
+          "billingAddressCity": "string",
+          "billingAddressState": "string",
+          "billingAddressCountry": "string",
+          "billingAddressPinCode": "string",
+          "shippingAddressArea": "string",
+          "shippingAddressCity": "string",
+          "shippingAddressState": "string",
+          "shippingAddressCountry": "string",
+          "shippingAddressPinCode": "string"
+        }
+      },
+      "update": {
+        "url": "profile/update",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "string",
+          "email": "string",
+          "gstTreatment": "string",
+          "businessGSTIN": "string",
+          "billingAddressArea": "string",
+          "billingAddressCity": "string",
+          "billingAddressState": "string",
+          "billingAddressCountry": "string",
+          "billingAddressPinCode": "string",
+          "shippingAddressArea": "string",
+          "shippingAddressCity": "string",
+          "shippingAddressState": "string",
+          "shippingAddressCountry": "string",
+          "shippingAddressPinCode": "string"
+        }
+      }
+    },
+    "accountdetails": {
+      "get": {
+        "url": "accountdetails/get",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      }
+    },
+    "query": {
+      "update": {
+        "url": "query/update/status",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      },
+      "get": {
+        "url": "query/get",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "create": {
+        "url": "query/create",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "queryType": "string",
+          "invoiceNo": "string",
+          "vendorCode": "string",
+          "queryStatus": "string",
+          "querySubject": "string",
+          "queryDetail": "string",
+          "comment": "string",
+          "file": "buffer"
+        }
+      }
+    },
+    "notifications": {
+      "getunreadcount": {
+        "url": "notifications/getunreadcount",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "unread": {
+        "url": "notifications/getunread",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "read": {
+        "url": "notifications/getread",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "allasread": {
+        "url": "notifications/markallasread",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "all": {
+        "url": "notifications/getall",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "create": {
+        "url": "notifications/create",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "company": "string",
+          "user": "string",
+          "message": "string",
+          "markAsRead": "string",
+          "markAsUnread": "string",
+          "count": "number",
+          "types": "string"
+        }
+      },
+      "updatenotification": {
+        "url": "notifications/updatenotification",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "company": "string",
+          "user": "string",
+          "message": "string",
+          "markAsRead": "string",
+          "markAsUnread": "string",
+          "count": "number",
+          "types": "string"
+        }
+      },
+      "deletenotification": {
+        "url": "notifications/deletenotification",
+        "method": "DELETE",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        }
+      }
+    },
+    "querychat": {
+      "get": {
+        "url": "querychat/get",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "create": {
+        "url": "querychat/create",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "messages": "string"
+        }
+      }
+    },
+    "organisation": {
+      "get": {
+        "url": "organisation/getcount",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "getfiles": {
+        "url": "organisation/getfiles",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      }
+    },
+    "users": {
+      "isLoggedIn": {
+        "url": "users/isLoggedIn",
+        "method": "GET",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        }
+      },
+      "changePassword": {
+        "url": "users/changePassword",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "currentPassword": "string",
+          "newPassword": "string",
+          "confirmPassword": "string",
+          "id": "string"
+        }
+      },
+      "logout": {
+        "url": "users/logout",
+        "method": "DELETE",
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "create": {
+        "url": "users/create",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "string",
+          "email": "string",
+          "password": "string",
+          "permission": "array",
+          "moNumber": "string",
+          "role": "string"
+        }
+      },
+      "get": {
+        "url": "users/get",
+        "method": "GET",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "update": {
+        "url": "users/update",
+        "method": "PUT",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "string",
+          "moNumber": "string",
+          "email": "string",
+          "role": "string",
+          "permission": "array"
+        }
+      },
+      "delete": {
+        "url": "users/delete",
+        "method": "DELETE",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "getPermissions": {
+        "url": "users/getPermissions",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "userId": "string"
+        },
+        "response": {
+          "statusCode": 200
+        }
+      },
+      "getUserDetails": {
+        "url": "users/getAccountDetail",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "response": {
+          "statusCode": 200
+        }
+      },
+      "updateUserDetails": {
+        "url": "users/updateAccountDetails",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "userId": "string"
+        },
+        "response": {
+          "statusCode": 200
+        }
+      },
+      "getUserType": {
+        "url": "organisation/type",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "id": "string",
+          "name": "string"
+        },
+        "response": {
+          "statusCode": 200
+        }
+      }
+    },
+    "orderDetail": {
+      "create": {
+        "url": "orderDetail/create",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "values": "string"
+        }
+      },
+      "get": {
+        "url": "orderDetail/get",
+        "method": "GET",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "getfiles": {
+        "url": "orderDetail/getfiles",
+        "method": "GET",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "query": {
+          "orderId": "string",
+          "type": "string"
+        }
+      },
+      "getDoc": {
+        "url": "orderDetail/getDoc",
+        "method": "GET",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "getAddDoc": {
+        "url": "orderDetail/getAddDoc",
+        "method": "GET",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+
+      "getLineItems": {
+        "url": "orderDetail/getLineItems",
+        "method": "GET",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+
+      "update": {
+        "url": "orderDetail/update/status",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      },
+      "updateLineItems": {
+        "url": "orderDetail/update/lineitems",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "values": "object"
+        }
+      }
+    },
+
+    "order": {
+      "get": {
+        "url": "order/get",
+        "method": "GET",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "checkOrder": {
+        "url": "order/checkOrder",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getVendors": {
+        "url": "order/getVendors",
+        "method": "GET",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "getOpenOrders": {
+        "url": "order/getOpenOrders",
+        "method": "GET",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "getOrderCount": {
+        "url": "order/count",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer {{token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "value": "string"
+        }
+      }
+    },
+    "mentor":{
+      "create": {
+        "url": "mentor/create",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      },
+      "signup": {
+        "url": "mentor/signup",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      },
+      "update": {
+        "url": "mentor/update",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      },
+      "multi": {
+        "url": "mentor/multi",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      },
+      "get": {
+        "url": "mentor/get",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      },
+      "getActiveUsers": {
+        "url": "mentor/getActiveUsers",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      }
+    },
+    "seeker": {
+      "findByNumber": {
+        "url": "seeker/findByNumber",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      },
+      "signup": {
+        "url": "seeker/signUp",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      },
+      "create": {
+        "url": "seeker/create",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      },
+      "createMultiple": {
+        "url": "seeker/create/multi",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      },
+      "getSeekers": {
+        "url": "seeker/getSeekers",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "genderCounts": {
+        "url": "seeker/gender/Count",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "update": {
+        "url": "seeker",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "verifyDocument": {
+        "url": "seeker/verifyDocument",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "sendOtp": {
+        "url": "seeker/otp",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "verifySeekerOtp": {
+        "url": "seeker/verifySeekerOtp",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "verifyExistingSeekerToken": {
+        "url": "seeker/verifyExistingSeekerToken",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "verifyToken": {
+        "url": "seeker/verifyToken",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "verifySignUpSeekerToken": {
+        "url": "seeker/verifySignUpSeekerToken",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getSeekerById": {
+        "url": "seeker/getSeekerById",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "seekerAgents": {
+        "url": "seeker/seekerAgents",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      }
+    },
+    "agent": {
+      "create": {
+        "url": "agent/create",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "createExcel": {
+        "url": "agent/create/excel",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getAgents": {
+        "url": "agent/getAgents",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+        "updateAgent": {
+        "url": "agent/updateAgent",
+        "method": "PUT",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      }
+    },
+    "workOpportunites": {
+      "getData": {
+        "url": "workOpportunites/getData",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getJobworkMode": {
+        "url": "orderDetail/getWorkMode",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getJobDepartments": {
+        "url": "orderDetail/getDepartments",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "selectJob": {
+        "url": "client/select",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "initJob": {
+        "url": "client/init",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "confirm": {
+        "url": "client/confirm",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "selectJobById": {
+        "url": "workOpportunites/single",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "getSelectDetails": {
+        "url": "workOpportunites/getSelectedData",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getInitDetails": {
+        "url": "workOpportunites/getInitDetails",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getConfirmDetails": {
+        "url": "workOpportunites/getConfirmDetails",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getSeekerJobs": {
+        "url": "workOpportunites/getSeekerJobs",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getorderDetails": {
+        "url": "workOpportunites/getOrderDetails",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getOrderDetailsActions": {
+        "url": "workOpportunites/getOrderDetailsActions",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      }
+    },
+    "financial": {
+      "getData": {
+        "url": "financial/getData",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getSeekerScholarship": {
+        "url": "financial/getSeekerScholarship",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getSelectDetails": {
+        "url": "financial/getSelectedData",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "selectScholarshipById": {
+        "url": "financial/single",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "selectScholarship": {
+        "url": "client/select",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "initScholarship": {
+        "url": "client/init",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getInitDetails": {
+        "url": "financial/getInitDetails",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getorderDetails": {
+        "url": "financial/getOrderDetails",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getOrderDetailsActions": {
+        "url": "financial/getOrderDetailsActions",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "confirm": {
+        "url": "client/confirm",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getConfirmDetails": {
+        "url": "financial/getConfirmDetails",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      }
+    },
+    "courses": {
+      "initCourse": {
+        "url": "client/init",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getData": {
+        "url": "courses/getData",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "selectCourse": {
+        "url": "client/select",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "selectCourseById": {
+        "url": "courses/single",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      },
+      "getSelectDetails": {
+        "url": "courses/getSelectedData",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getInitDetails": {
+        "url": "courses/getInitDetails",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getSeekerCourses": {
+        "url": "courses/getSeekercourse",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getOrderDetails": {
+        "url": "courses/getOrderDetails",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getOrderDetailsActions": {
+        "url": "courses/getOrderDetailsActions",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "confirm": {
+        "url": "client/confirm",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      },
+      "getConfirmDetails": {
+        "url": "courses/getConfirmDetails",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "string"
+        }
+      }
+    },
+    "masterData": {
+      "createMasterData": {
+        "url": "masterData/createMasterData",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      },
+      "getMasterData": {
+        "url": "masterData/getMasterData",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      }
+    },
+    "hyperJob": {
+      "createHyperJobData": {
+        "url": "hyperJob/createHyperJobData",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      },
+      "updateHyperJobData": {
+        "url": "hyperJob/updateHyperJobData",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      },
+      "bulkCreateHyperJobData": {
+        "url": "hyperJob/bulkCreateHyperJobData",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "value": "object"
+        }
+      },
+      "getHyperJobData": {
+        "url": "hyperJob/getHyperJobData",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "value": "string"
+        }
+      }
     }
-}
-}
+  }

@@ -1,182 +1,323 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Button, VStack, Text, HStack, FormControl } from 'native-base';
+import React, { useEffect, useState, useRef } from 'react';
+import {
+  Box, Button, VStack, Text, HStack,
+  FormControl, Alert, View, Image, Pressable
+} from 'native-base';
+import { StyleSheet, Animated, Keyboard } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert, Image, StyleSheet, View } from 'react-native';
 import { BaseScreens } from '../../navigations/BaseStack';
 import { appRequest } from '../../routes';
 import CustomInput from '../common/CustomInput/CustomInput';
 import { UnAuthScreens } from '../../navigations/UnAuthStack';
+import OTPInput from '../common/CustomInput/OTPInput';
 
-// Type Definitions
 type LoginFormValues = {
-  email: string;
-  password: string;
+  moNumber: string;
+  otp: string;
 };
 
 type LoginFormErrors = {
-  email?: string;
-  password?: string;
+  moNumber?: string;
+  otp?: string;
 };
 
 export default function LogInScreen() {
   const { navigate } = useNavigation<any>();
-  const [values, setValues] = useState<LoginFormValues>({ email: '', password: '' });
+  const [values, setValues] = useState<LoginFormValues>({ moNumber: '', otp: '' });
   const [errors, setErrors] = useState<LoginFormErrors>({});
-  const [loading, setLoading] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [modalData, setModalData] = useState({ isVisible: false, status: '', text: '' });
+  const [loginSteps, setLoginSteps] = useState({
+    index: 0,
+    token: '',
+    submitLoading: false,
+  });
+  const [timer, setTimer] = useState(30);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [alertData, setAlertData] = useState({ isVisible: false, status: '', message: '' });
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const closeModal = () => {
-    setModalData({ isVisible: false, status: '', text: '' });
+  // Auto-dismiss alerts
+  useEffect(() => {
+    if (alertData.isVisible) {
+      const timeout = setTimeout(() => {
+        setAlertData({ isVisible: false, status: '', message: '' });
+      }, 3000);
+      return () => clearTimeout(timeout);
+    }
+  }, [alertData.isVisible]);
+
+  // Animate screen transitions
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [loginSteps.index]);
+
+  // Resend OTP timer
+  useEffect(() => {
+    if (timer > 0 && loginSteps.index === 1) {
+      const interval = setInterval(() => setTimer(prev => prev - 1), 1000);
+      return () => clearInterval(interval);
+    } else if (timer === 0) {
+      setResendLoading(false);
+    }
+  }, [timer, loginSteps.index]);
+
+  const validateMobileNumber = (moNumber: string): boolean => {
+    const mobilePattern = /^[0-9]{10}$/;
+    if (!moNumber) {
+      setErrors(prev => ({ ...prev, moNumber: 'Mobile number is required' }));
+      return false;
+    } else if (!mobilePattern.test(moNumber)) {
+      setErrors(prev => ({ ...prev, moNumber: 'Please enter a valid 10-digit mobile number' }));
+      return false;
+    }
+    setErrors(prev => ({ ...prev, moNumber: undefined }));
+    return true;
   };
 
-  // Validate fields dynamically
-  const validateField = (name: keyof LoginFormValues, value: string) => {
-    let error: any = null;
-
-    if (!value) {
-      error = `${name === 'email' ? 'Email' : 'Password'} is required`;
-    } else if (name === 'email' && !/\S+@\S+\.\S+/.test(value)) {
-      error = 'Invalid email format';
-    } else if (name === 'password' && value.length < 6) {
-      error = 'Password must be at least 6 characters long';
+  const validateOtp = (otp: string): boolean => {
+    if (!otp) {
+      setErrors(prev => ({ ...prev, otp: 'OTP is required' }));
+      return false;
+    } else if (otp.length < 6) {
+      setErrors(prev => ({ ...prev, otp: 'OTP must be 6 digits' }));
+      return false;
     }
-
-    setErrors(prev => ({ ...prev, [name]: error }));
+    setErrors(prev => ({ ...prev, otp: undefined }));
+    return true;
   };
 
   const handleChange = (name: keyof LoginFormValues, value: string) => {
-    setValues(prevValues => ({ ...prevValues, [name]: value }));
-    validateField(name, value);
+    setValues(prev => ({ ...prev, [name]: value }));
+    if (name === 'moNumber') validateMobileNumber(value);
+    if (name === 'otp') validateOtp(value);
   };
 
-  // Handle the login form submission only on button press
-  const handleSubmit = async () => {
-    // Validate fields
-    validateField('email', values.email);
-    validateField('password', values.password);
+  const handleMobileSubmit = async () => {
+    if (!validateMobileNumber(values.moNumber)) return;
 
-    if (!errors.email && !errors.password && values.email && values.password) {
-      try {
-        setLoading(true);
-        const response: any = await appRequest('auth', 'login', {
-          username: values.email,
-          password: values.password,
-        });
+    try {
+      setLoginSteps(prev => ({ ...prev, submitLoading: true }));
+      setTimer(30);
+      setResendLoading(true);
+      Keyboard.dismiss();
 
-        if (response?.token) {
-          await AsyncStorage.setItem('auth-token', response.token);
-          setIsLoggedIn(true);
-        } else {
-          setModalData({
-            isVisible: true,
-            status: 'Error',
-            text: 'Invalid credentials. Please check your username and password.',
-          });
-        }
-      } catch (error : any) {
-        console.log(error?.message)
-        setModalData({
-          isVisible: true,
-          status: 'Error',
-          text: 'Login failed.',
-        });
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      setModalData({
-        isVisible: true,
-        status: 'Error',
-        text: 'Please fill in valid credentials',
+      const response: any = await appRequest('auth', 'login', {
+        username: values.moNumber,
+        password: 'abc123',
       });
+
+      if (response?.token) {
+        setLoginSteps(prev => ({ ...prev, token: response.token, index: 1 }));
+        setAlertData({
+          isVisible: true,
+          status: 'success',
+          message: 'OTP sent to your number',
+        });
+        fadeAnim.setValue(0);
+      } else {
+        setAlertData({
+          isVisible: true,
+          status: 'error',
+          message: response?.message || 'Failed to send OTP',
+        });
+      }
+    } catch (error: any) {
+      setAlertData({
+        isVisible: true,
+        status: 'error',
+        message: error?.message || 'Failed to send OTP',
+      });
+    } finally {
+      setLoginSteps(prev => ({ ...prev, submitLoading: false }));
     }
   };
 
-  useEffect(() => {
-    if (isLoggedIn) {
-      navigate(BaseScreens.AuthStack);
+  const handleOtpSubmit = async () => {
+    if (!validateOtp(values.otp)) return;
+
+    try {
+      setLoginSteps(prev => ({ ...prev, submitLoading: true }));
+      Keyboard.dismiss();
+
+      const response: any = await appRequest('auth', 'verifyLoginToken', {
+        id: loginSteps.token,
+        otp: values.otp,
+      });
+
+      if (response?.token && response.status === 'success') {
+        await AsyncStorage.setItem('auth-token', response.token);
+        setAlertData({
+          isVisible: true,
+          status: 'success',
+          message: 'Logged in successfully',
+        });
+        setTimeout(() => navigate(BaseScreens.AuthStack), 1000);
+      } else {
+        setAlertData({
+          isVisible: true,
+          status: 'error',
+          message: response?.data || 'Invalid OTP',
+        });
+      }
+    } catch (error: any) {
+      setAlertData({
+        isVisible: true,
+        status: 'error',
+        message: error?.message || 'Invalid OTP',
+      });
+    } finally {
+      setLoginSteps(prev => ({ ...prev, submitLoading: false }));
     }
-  }, [isLoggedIn, navigate]);
+  };
 
-    return (
-        <Box flex={1} alignItems="center" justifyContent="center" p={5} bg={'white'}>
-            <VStack space={4} w="100%" px={4}>
-            <View style={styles.imageContainer}>
-          <Image
-            source={require('../../assets/img/sqLogo.png')} // Update with your image path
-            style={styles.noDataImage}
-            resizeMode="contain" // Adjust resizeMode as per your needs
-          />
+  const handleResendOtp = async () => {
+    if (resendLoading) return;
+    await handleMobileSubmit();
+  };
 
-        </View>
-                <Text color={'teal.500'} textAlign={"center"} fontSize="2xl" mt={-20} mb={8} bold>Welcome Back!</Text>
-                <Text color={'gray.400'} textAlign={"center"} fontSize="lg" mt={-10} bold>Please enter your email and password</Text>
+  const handleBack = () => {
+    setLoginSteps({ index: 0, token: '', submitLoading: false });
+    setValues(prev => ({ ...prev, otp: '' }));
+    setErrors(prev => ({ ...prev, otp: undefined }));
+    fadeAnim.setValue(0);
+  };
 
-        {/* Input for email */}
-        <FormControl isInvalid={!!errors.email}>
-          <CustomInput
-            name="email"
-            type="text"
-            floatingLabel={false}
-            placeholder="Enter username"
-            value={values.email}
-            onChange={text => handleChange('email', text)}
-            required
-          />
-          {errors.email && (
-            <FormControl.ErrorMessage>{errors.email}</FormControl.ErrorMessage>
-          )}
-        </FormControl>
-
-        {/* Input for password */}
-        <FormControl isInvalid={!!errors.password}>
-          <CustomInput
-            name="password"
-            type="password"
-            floatingLabel={false}
-            placeholder="Enter password"
-            value={values.password}
-            onChange={text => handleChange('password', text)}
-            required
-          />
-          {errors.password && (
-            <FormControl.ErrorMessage>{errors.password}</FormControl.ErrorMessage>
-          )}
-        </FormControl>
-
-        {/* Button to trigger login */}
-        <Button
-          h="50px"
-          bg="teal.500"
-          _text={{ fontSize: 'md', fontWeight: 500 }}
-          mt={2}
-          onPress={handleSubmit}
-          isLoading={loading}
-          disabled={loading}>
-          Log In
-        </Button>
-
-        {/* Sign up navigation */}
-        <HStack mt={2} justifyContent="center">
-          <Text>Don't have an account? </Text>
-          <Text bold color="teal.500" onPress={() => navigate(UnAuthScreens.SignUp)}>
-            Sign Up
+  return (
+    <Box flex={1} alignItems="center" justifyContent="center" p={5} bg="white" safeArea>
+      <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+        <VStack space={4} w="100%" px={4}>
+          <View style={styles.imageContainer}>
+            <Image
+              source={require('../../assets/img/sqLogo.png')}
+              style={styles.noDataImage}
+              resizeMode="contain"
+              alt="Logo"
+            />
+          </View>
+          <Text color="teal.600" textAlign="center" fontSize="2xl" fontWeight="bold">
+            Welcome Back!
           </Text>
-        </HStack>
-      </VStack>
+          <Text color="gray.500" textAlign="center" fontSize="md">
+            {loginSteps.index === 0
+              ? 'Enter your mobile number to sign in'
+              : 'Enter the 6-digit OTP sent to your number'}
+          </Text>
+
+          {alertData.isVisible && (
+            <Alert w="100%" status={alertData.status} mb={4} borderRadius="md">
+              <HStack space={2} alignItems="center">
+                <Alert.Icon />
+                <Text fontSize="sm" color="coolGray.800" flexShrink={1}>
+                  {alertData.message}
+                </Text>
+              </HStack>
+            </Alert>
+          )}
+
+          {loginSteps.index === 0 ? (
+            <FormControl isInvalid={!!errors.moNumber}>
+              <CustomInput
+                name="moNumber"
+                placeholder="Mobile Number"
+                value={values.moNumber}
+                onChange={text => handleChange('moNumber', text)}
+                required
+                maxLength={10}
+              />
+              {errors.moNumber && (
+                <FormControl.ErrorMessage>{errors.moNumber}</FormControl.ErrorMessage>
+              )}
+              <Button
+                mt={4}
+                onPress={handleMobileSubmit}
+                isLoading={loginSteps.submitLoading}
+                isDisabled={!!errors.moNumber || !values.moNumber}
+                borderRadius="lg"
+                bg="teal.600"
+                _pressed={{ bg: 'teal.700' }}
+              >
+                Send OTP
+              </Button>
+            </FormControl>
+          ) : (
+            <VStack space={4}>
+              <FormControl isInvalid={!!errors.otp}>
+                <OTPInput
+                  value={values.otp}
+                  onChange={text => handleChange('otp', text)}
+                  error={errors.otp}
+                  numDigits={6}
+                  inputSize={12}
+                />
+                {errors.otp && (
+                  <FormControl.ErrorMessage>{errors.otp}</FormControl.ErrorMessage>
+                )}
+              </FormControl>
+              <Button
+                onPress={handleOtpSubmit}
+                isLoading={loginSteps.submitLoading}
+                isDisabled={!!errors.otp || values.otp.length < 6}
+                borderRadius="lg"
+                bg="teal.600"
+                _pressed={{ bg: 'teal.700' }}
+              >
+                Verify OTP
+              </Button>
+              <HStack justifyContent="space-between" alignItems="center" mt={2}>
+                <Pressable onPress={handleBack}>
+                  <Text color="teal.600" fontSize="sm" textDecorationLine="underline">
+                    Back
+                  </Text>
+                </Pressable>
+                <HStack space={2} alignItems="center">
+                  <Button
+                    variant="link"
+                    onPress={handleResendOtp}
+                    isDisabled={resendLoading}
+                    _text={{ color: 'teal.600', fontSize: 'sm' }}
+                  >
+                    Resend OTP
+                  </Button>
+                  {resendLoading && (
+                    <Text color="gray.500" fontSize="sm">
+                      in {timer}s
+                    </Text>
+                  )}
+                </HStack>
+              </HStack>
+            </VStack>
+          )}
+
+          <HStack mt={4} justifyContent="center">
+            <Text color="gray.600" fontSize="sm">
+              Don't have an account?{' '}
+            </Text>
+            <Pressable onPress={() => navigate(UnAuthScreens.SignUp)}>
+              <Text color="teal.600" fontSize="sm" fontWeight="bold" textDecorationLine="underline">
+                Sign Up
+              </Text>
+            </Pressable>
+          </HStack>
+        </VStack>
+      </Animated.View>
     </Box>
   );
 }
-const styles = StyleSheet.create({
-    imageContainer: {
-        alignItems: 'center',
-      },
-      noDataImage: {
-        width: 300,
-        height: 300,
-        marginTop: -180,
-      },
-})
 
+const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+  },
+  imageContainer: {
+    alignItems: 'center',
+  },
+  noDataImage: {
+    width: 200,
+    height: 200,
+    marginTop: -100,
+  },
+});

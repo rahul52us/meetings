@@ -1,5 +1,5 @@
 export type RootStackParamList = {
-  FolderDocumentList: undefined;
+  Dashboard:any;
   DocumentList: {
     folder: any;
   };
