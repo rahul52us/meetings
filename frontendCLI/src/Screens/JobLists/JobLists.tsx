@@ -14,9 +14,41 @@ import {
   TouchableOpacity,
   ScrollView,
   ViewStyle,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { appRequest } from '../../routes'; // Assumed to be a valid API request function
+import { appRequest } from '../../routes'; // Assumed API request function
+
+// Mock PassportValidationComponent (replace with actual import)
+const PassportValidationComponent = ({ open, onClose, item, handleGetUser }: {
+  open: boolean;
+  onClose: () => void;
+  item: Job;
+  handleGetUser: (isTabSwitch?: boolean) => Promise<void>;
+}) => {
+  if (!open) return null;
+  return (
+    <Modal visible={open} transparent animationType="fade">
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Validate Passport for {item.jobDetails?.jobTitle}</Text>
+          <Pressable
+            style={styles.modalButton}
+            onPress={async () => {
+              await handleGetUser();
+              onClose();
+            }}
+          >
+            <Text style={styles.modalButtonText}>Validate (Mock)</Text>
+          </Pressable>
+          <Pressable style={styles.modalButton} onPress={onClose}>
+            <Text style={styles.modalButtonText}>Close</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+};
 
 // Interfaces
 interface ApiResponse {
@@ -44,6 +76,7 @@ interface Job {
     passportNumber?: string;
     location?: string;
     salary?: string;
+    isVerified?: boolean; // Added for passport validation
   };
   jobScope?: string;
   employerName?: { name?: string };
@@ -209,7 +242,7 @@ const JobDetails: React.FC<ModalProps> = ({ isOpen, onClose, jobDetails }) => {
               <Text style={styles.modalCloseIcon}>✖️</Text>
             </Pressable>
           </View>
-          <View style={styles.modalBody}>
+          <ScrollView style={styles.modalBody}>
             <Text style={styles.modalText}>Title: {jobDetails.jobDetails?.jobTitle ?? 'NA'}</Text>
             <Text style={styles.modalText}>Type: {jobDetails.jobDetails?.jobType ?? 'NA'}</Text>
             <Text style={styles.modalText}>Scope: {formatJobScope(jobDetails.jobScope ?? 'NA')}</Text>
@@ -223,7 +256,7 @@ const JobDetails: React.FC<ModalProps> = ({ isOpen, onClose, jobDetails }) => {
             <Text style={styles.modalText}>Location: {jobDetails.jobDetails?.location ?? 'NA'}</Text>
             <Text style={styles.modalText}>Salary: ₹ {jobDetails.jobDetails?.salary ?? 'NA'}</Text>
             <Text style={styles.modalText}>Created By: {jobDetails.createdBy?.name ?? 'NA'}</Text>
-          </View>
+          </ScrollView>
         </View>
       </Animated.View>
     </Modal>
@@ -311,114 +344,115 @@ const TableRow = memo(
   ({
     item,
     index,
-    pixelWidths,
+    totalTableWidth,
     setSelectedJob,
     setIsDetailsOpen,
     setIsEditOpen,
     toastNotify,
     handleDelete,
+    setValidationModalOpen,
+    setValidationItem,
+    rowHighlight,
+    setRowHighlight,
   }: {
-    item: Job;
+    item: any;
     index: number;
-    pixelWidths: number[];
+    totalTableWidth: number;
     setSelectedJob: React.Dispatch<React.SetStateAction<Job | null>>;
     setIsDetailsOpen: React.Dispatch<React.SetStateAction<boolean>>;
     setIsEditOpen: React.Dispatch<React.SetStateAction<boolean>>;
     toastNotify: (params: { title: string; message: string; type: string }) => void;
     handleDelete: (job: Job) => void;
+    setValidationModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    setValidationItem: React.Dispatch<React.SetStateAction<Job | null>>;
+    rowHighlight: string | null;
+    setRowHighlight: React.Dispatch<React.SetStateAction<string | null>>;
   }) => {
-    const scaleAnim = useRef(new Animated.Value(1)).current;
-
-    const handlePressIn = () => {
-      Animated.spring(scaleAnim, { toValue: 0.98, useNativeDriver: true }).start();
-    };
-
-    const handlePressOut = () => {
-      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
-    };
-
     return (
-      <Animated.View
+      <Pressable
         style={[
           styles.tableRow,
           {
-            transform: [{ scale: scaleAnim }],
-            backgroundColor: index % 2 === 0 ? '#FFFFFF' : '#F9FAFB',
-            minHeight: 60,
+            minWidth: totalTableWidth,
+            backgroundColor: rowHighlight === item._id ? '#B0E0E6' : index % 2 === 0 ? '#FFFFFF' : '#F9FAFB',
           },
         ]}
+        onPress={() => {
+          setSelectedJob(item);
+          setIsDetailsOpen(true);
+        }}
+        onPressIn={() => setRowHighlight(item._id)}
+        onPressOut={() => setRowHighlight(null)}
+        accessibilityLabel={`View details for ${item.jobDetails?.jobTitle ?? 'job'}`}
+        accessibilityRole="button"
       >
-        <Pressable
-          style={[styles.tableCell, { width: pixelWidths[0], paddingLeft: 12 }]}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          onPress={() => {
-            setSelectedJob(item);
-            setIsDetailsOpen(true);
-          }}
-          accessibilityLabel={`View details for ${item.jobDetails?.jobTitle ?? 'job'}`}
-        >
-          <Text
-            style={[styles.tableCellText, { textAlign: 'left' }]}
-            numberOfLines={2}
-            ellipsizeMode="tail"
-          >
-            {item.jobDetails?.jobTitle ?? 'NA'}
-          </Text>
-        </Pressable>
-        <View style={[styles.tableCell, { width: pixelWidths[1] }]}>
-          <View
-            style={[
-              styles.badge,
-              { backgroundColor: item.jobScope === 'hyper_local' ? '#34D399' : '#60A5FA' },
-            ]}
-          >
-            <Text style={styles.badgeText}>{formatJobScope(item.jobScope ?? '')}</Text>
-          </View>
-        </View>
-        <Text
-          style={[styles.tableCell, styles.tableCellText, { width: pixelWidths[2] }]}
-          numberOfLines={1}
-          ellipsizeMode="tail"
-        >
+        <Text style={[styles.tableCell, { width: COLUMN_WIDTHS.jobTitle }]} numberOfLines={1} ellipsizeMode="tail">
+          {item.jobDetails?.jobTitle ?? 'NA'}
+        </Text>
+        <Text style={[styles.tableCell, { width: COLUMN_WIDTHS.jobScope }]} numberOfLines={1} ellipsizeMode="tail">
+          {formatJobScope(item.jobScope ?? '')}
+        </Text>
+        <Text style={[styles.tableCell, { width: COLUMN_WIDTHS.salary }]} numberOfLines={1} ellipsizeMode="tail">
           ₹ {item.jobDetails?.salary ?? 'NA'}
         </Text>
-        <View style={[styles.tableCell, { width: pixelWidths[3], flexDirection: 'row', gap: 6 }]}>
+        {item.jobScope === 'abroad' && (
+          <Pressable
+            style={[styles.tableCell, { width: COLUMN_WIDTHS.passportNumber }]}
+            onPress={() => {
+              if (!item.jobDetails?.isVerified) {
+                // setValidationItem(item);
+                // setValidationModalOpen(true);
+              } else {
+                // toastNotify({ title: 'Already Verified', message: 'Passport is already validated.' });
+              }
+            }}
+            accessibilityLabel={`Validate passport for ${item.jobDetails?.jobTitle ?? 'job'}`}
+            accessibilityRole="button"
+          >
+            <Text style={styles.tableCellText} numberOfLines={1} ellipsizeMode="tail">
+              {maskAadhaar(item.jobDetails?.passportNumber)}
+            </Text>
+          </Pressable>
+        )}
+        {item.jobScope !== 'abroad' && (
+          <Text style={[styles.tableCell, { width: COLUMN_WIDTHS.passportNumber }]} numberOfLines={1} ellipsizeMode="tail">
+            NA
+          </Text>
+        )}
+        <View style={[styles.tableCell, { width: COLUMN_WIDTHS.actions, flexDirection: 'row', gap: 6 }]}>
           <TouchableOpacity
-            style={styles.actionButton}
             onPress={() => {
               setSelectedJob(item);
               setIsEditOpen(true);
             }}
-            accessibilityLabel="Edit job"
+            accessibilityLabel={`Edit ${item.jobDetails?.jobTitle ?? 'job'}`}
+            accessibilityRole="button"
           >
             <Text style={[styles.iconText, { color: '#4FD1C5' }]}>✏️</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => {
-              setSelectedJob(item);
-              setIsDetailsOpen(true);
-            }}
-            accessibilityLabel="View job details"
-          >
-            <Text style={[styles.iconText, { color: '#4FD1C5' }]}>ℹ️</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.actionButton}
             onPress={() => handleDelete(item)}
-            accessibilityLabel="Delete job"
+            accessibilityLabel={`Delete ${item.jobDetails?.jobTitle ?? 'job'}`}
+            accessibilityRole="button"
           >
             <Text style={[styles.iconText, { color: '#EF4444' }]}>🗑️</Text>
           </TouchableOpacity>
         </View>
-      </Animated.View>
+      </Pressable>
     );
   },
   (prevProps, nextProps) => prevProps.item === nextProps.item && prevProps.index === nextProps.index
 );
 
-export default function JobList() {
+const COLUMN_WIDTHS = {
+  jobTitle: 200,
+  jobScope: 120,
+  salary: 100,
+  passportNumber: 120,
+  actions: 100,
+};
+
+const JobList: React.FC = () => {
   const [jobData, setJobData] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isTabLoading, setIsTabLoading] = useState(true);
@@ -434,18 +468,19 @@ export default function JobList() {
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [sortField, setSortField] = useState<'jobTitle' | 'salary' | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [columnWidths] = useState([200, 120, 100, 120]);
-  const tabAnim = useRef(new Animated.Value(activeTab === 'hyper_local' ? 0 : 1)).current;
-  const fabAnim = useRef(new Animated.Value(0)).current;
+  const [validationModalOpen, setValidationModalOpen] = useState(false);
+  const [validationItem, setValidationItem] = useState<Job | null>(null);
+  const [rowHighlight, setRowHighlight] = useState<string | null>(null);
 
   const { toastNotify } = useContext(AppContext);
   const prevActiveTab = useRef(activeTab);
   const abortControllerRef = useRef<AbortController | null>(null);
   const pageChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const tabAnim = useRef(new Animated.Value(activeTab === 'hyper_local' ? 0 : 1)).current;
+  const fabAnim = useRef(new Animated.Value(0)).current;
 
   const getUserData = useCallback(
     async (isTabSwitch = false) => {
-      // Cancel previous request
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
@@ -457,19 +492,12 @@ export default function JobList() {
         } else {
           setIsLoading(true);
         }
-        console.log('Calling getUserData:', { currentPage, activeTab, search, isTabSwitch });
-        const response: any = await appRequest(
-          'hyperJob',
-          'getHyperJobData',
-          {
-            page: currentPage,
-            limit: 10,
-            type: activeTab,
-            search: search.trim(),
-          },
-          // { signal: abortControllerRef.current.signal }
-        );
-        console.log('API Response:', { page: currentPage, type: activeTab, dataLength: response.data?.length });
+        const response: any = await appRequest('hyperJob', 'getHyperJobData', {
+          page: currentPage,
+          limit: 10,
+          type: activeTab,
+          search: search.trim(),
+        });
         if (response.status === 'success') {
           setJobData(response.data ?? []);
           setTotalPages(response.totalPages ?? 1);
@@ -483,10 +511,8 @@ export default function JobList() {
         }
       } catch (err: unknown) {
         if (err instanceof Error && err.name === 'AbortError') {
-          console.log('Request aborted');
           return;
         }
-        console.error('API Error:', err);
         toastNotify({
           title: 'Error',
           message: err instanceof Error ? err.message : 'Failed to fetch jobs',
@@ -505,7 +531,6 @@ export default function JobList() {
     [currentPage, activeTab, search, toastNotify]
   );
 
-  // Consolidated API call effect
   useEffect(() => {
     let debounceTimeout: NodeJS.Timeout | null = null;
     if (!search) {
@@ -524,7 +549,6 @@ export default function JobList() {
     };
   }, [currentPage, activeTab, search, getUserData]);
 
-  // Initial fetch on mount
   useEffect(() => {
     getUserData(true);
     return () => {
@@ -532,9 +556,8 @@ export default function JobList() {
         abortControllerRef.current.abort();
       }
     };
-  }, []); // Empty deps for mount only
+  }, []);
 
-  // Tab animation effect
   useEffect(() => {
     Animated.timing(tabAnim, {
       toValue: activeTab === 'hyper_local' ? 0 : 1,
@@ -547,13 +570,10 @@ export default function JobList() {
   const handlePageChange = useCallback(
     (page: number) => {
       if (page < 1 || page > totalPages || page === currentPage) return;
-
-      // Debounce page change
       if (pageChangeTimeoutRef.current) {
         clearTimeout(pageChangeTimeoutRef.current);
       }
       pageChangeTimeoutRef.current = setTimeout(() => {
-        console.log('Changing page to:', page);
         setCurrentPage(page);
       }, 300);
     },
@@ -618,7 +638,7 @@ export default function JobList() {
 
   useEffect(() => {
     handlePostExcel();
-  }, [uploadedFile]);
+  }, [uploadedFile, handlePostExcel]);
 
   const toggleFab = useCallback(() => {
     Animated.timing(fabAnim, {
@@ -702,151 +722,131 @@ export default function JobList() {
     [toastNotify, getUserData]
   );
 
-  const columns = ['Job Title', 'Job Scope', 'Salary', 'Actions'];
-  const pixelWidths = columnWidths;
+  const columns = [
+    { key: 'jobTitle', title: 'Job Title', width: COLUMN_WIDTHS.jobTitle },
+    { key: 'jobScope', title: 'Job Scope', width: COLUMN_WIDTHS.jobScope },
+    { key: 'salary', title: 'Salary', width: COLUMN_WIDTHS.salary },
+    { key: 'passportNumber', title: 'Passport No.', width: COLUMN_WIDTHS.passportNumber },
+    { key: 'actions', title: 'Actions', width: COLUMN_WIDTHS.actions },
+  ];
 
-  const renderTableHeader = useCallback(
-    () => (
-      <View style={styles.tableHeader}>
-        {columns.map((column, index) => (
-          <Pressable
-            key={column}
-            style={[styles.tableHeaderCell, { width: pixelWidths[index] }]}
-            onPress={() =>
-              column === 'Job Title'
-                ? handleSort('jobTitle')
-                : column === 'Salary'
-                ? handleSort('salary')
-                : null
-            }
-            accessibilityLabel={`Sort by ${column}`}
-          >
-            <Text style={styles.tableHeaderText}>
-              {column}
-              {sortField === (column === 'Job Title' ? 'jobTitle' : 'salary') &&
-                (sortOrder === 'asc' ? ' ↑' : ' ↓')}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-    ),
-    [pixelWidths, sortField, sortOrder, handleSort]
-  );
+  const totalTableWidth = columns.reduce((sum, col) => sum + col.width, 0);
 
-  const renderTable = useCallback(
-    () => (
-      <View style={[styles.tableContainer, { height: screenHeight * 0.6 }]}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={true} nestedScrollEnabled={true}>
-          <View style={{ width: pixelWidths.reduce((a, b) => a + b, 0) }}>
-            {renderTableHeader()}
-            <FlatList
-              data={sortedData}
-              keyExtractor={(item, index) => item._id || `${item.jobDetails?.jobTitle}-${index}`}
-              renderItem={({ item, index }) => (
-                <TableRow
-                  item={item}
-                  index={index}
-                  pixelWidths={pixelWidths}
-                  setSelectedJob={setSelectedJob}
-                  setIsDetailsOpen={setIsDetailsOpen}
-                  setIsEditOpen={setIsEditOpen}
-                  toastNotify={toastNotify}
-                  handleDelete={handleDelete}
-                />
-              )}
-              ListEmptyComponent={
-                isTabLoading ? (
-                  <CustomLoader />
-                ) : (
-                  <View style={[styles.emptyStateContainer, { height: screenHeight * 0.6 }]}>
-                    <Text style={styles.noDataText}>
-                      {isLoading ? 'Loading...' : 'No jobs found'}
-                    </Text>
-                    {!isLoading && (
-                      <Pressable
-                        style={styles.emptyStateButton}
-                        onPress={() => setIsAddOpen(true)}
-                        accessibilityLabel="Add a job"
-                      >
-                        <Text style={styles.emptyStateButtonText}>Add a Job</Text>
-                      </Pressable>
-                    )}
-                  </View>
-                )
-              }
-              style={styles.tableList}
-              contentContainerStyle={{ paddingBottom: 80 }}
-              initialNumToRender={10}
-              maxToRenderPerBatch={10}
-              getItemLayout={(data, index) => ({
-                length: 60,
-                offset: 60 * index,
-                index,
-              })}
-            />
-          </View>
-        </ScrollView>
-      </View>
-    ),
-    [
-      sortedData,
-      isTabLoading,
-      isLoading,
-      pixelWidths,
-      renderTableHeader,
-      setSelectedJob,
-      setIsDetailsOpen,
-      setIsEditOpen,
-      toastNotify,
-      handleDelete,
-    ]
-  );
-
-  const renderPagination = useCallback(
-    () => (
-      <View style={styles.paginationContainer}>
+  const renderTableHeader = useCallback(() => (
+    <View style={[styles.tableHeader, { minWidth: totalTableWidth }]}>
+      {columns.map((column) => (
         <Pressable
-          style={[styles.paginationButton, currentPage === 1 && styles.paginationButtonDisabled]}
-          onPress={() => handlePageChange(currentPage - 1)}
-          accessibilityLabel="Previous page"
-          accessibilityRole="button"
-          disabled={currentPage === 1}
-        >
-          <Text style={styles.paginationButtonText}>←</Text>
-        </Pressable>
-        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-          const page = Math.max(1, currentPage - 2) + i;
-          if (page <= totalPages) {
-            return (
-              <Pressable
-                key={page}
-                style={[
-                  styles.paginationButton,
-                  currentPage === page && styles.paginationButtonActive,
-                ]}
-                onPress={() => handlePageChange(page)}
-                accessibilityLabel={`Page ${page}`}
-                accessibilityRole="button"
-              >
-                <Text style={styles.paginationButtonText}>{page}</Text>
-              </Pressable>
-            );
+          key={column.key}
+          style={[styles.tableHeaderCell, { width: column.width }]}
+          onPress={() =>
+            column.key === 'jobTitle'
+              ? handleSort('jobTitle')
+              : column.key === 'salary'
+              ? handleSort('salary')
+              : null
           }
-          return null;
-        })}
-        <Pressable
-          style={[styles.paginationButton, currentPage === totalPages && styles.paginationButtonDisabled]}
-          onPress={() => handlePageChange(currentPage + 1)}
-          accessibilityLabel="Next page"
+          accessibilityLabel={`Sort by ${column.title}`}
           accessibilityRole="button"
-          disabled={currentPage === totalPages}
         >
-          <Text style={styles.paginationButtonText}>→</Text>
+          <Text style={styles.tableHeaderText} numberOfLines={1} ellipsizeMode="tail">
+            {column.title}
+            {sortField === column.key && (sortOrder === 'asc' ? ' ↑' : ' ↓')}
+          </Text>
         </Pressable>
-      </View>
-    ),
-    [totalPages, currentPage, handlePageChange]
-  );
+      ))}
+    </View>
+  ), [totalTableWidth, sortField, sortOrder, handleSort]);
+
+  const renderTable = useCallback(() => (
+    <View style={[styles.tableContainer, { height: screenHeight * 0.6 }]}>
+      <ScrollView horizontal bounces={false} showsHorizontalScrollIndicator={true}>
+        <View style={{ minWidth: totalTableWidth }}>
+          {renderTableHeader()}
+          <FlatList
+            data={sortedData}
+            renderItem={({ item, index }) => (
+              <TableRow
+                item={item}
+                index={index}
+                totalTableWidth={totalTableWidth}
+                setSelectedJob={setSelectedJob}
+                setIsDetailsOpen={setIsDetailsOpen}
+                setIsEditOpen={setIsEditOpen}
+                toastNotify={toastNotify}
+                handleDelete={handleDelete}
+                setValidationModalOpen={setValidationModalOpen}
+                setValidationItem={setValidationItem}
+                rowHighlight={rowHighlight}
+                setRowHighlight={setRowHighlight}
+              />
+            )}
+            keyExtractor={(item, index) => item._id || `${item.jobDetails?.jobTitle}-${index}`}
+            initialNumToRender={10}
+            windowSize={10}
+            ListEmptyComponent={
+              isTabLoading ? (
+                <CustomLoader />
+              ) : !isLoading && sortedData.length === 0 ? (
+                <View style={[styles.emptyState, { height: screenHeight * 0.6 }]}>
+                  <Text style={styles.noDataText}>No jobs found</Text>
+                  <Pressable
+                    style={styles.emptyStateButton}
+                    onPress={() => setIsAddOpen(true)}
+                    accessibilityLabel="Add a job"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.emptyStateButtonText}>Add a Job</Text>
+                  </Pressable>
+                </View>
+              ) : null
+            }
+            contentContainerStyle={{ paddingBottom: 80 }}
+          />
+        </View>
+      </ScrollView>
+    </View>
+  ), [
+    sortedData,
+    isTabLoading,
+    isLoading,
+    totalTableWidth,
+    renderTableHeader,
+    setSelectedJob,
+    setIsDetailsOpen,
+    setIsEditOpen,
+    toastNotify,
+    handleDelete,
+    setValidationModalOpen,
+    setValidationItem,
+    rowHighlight,
+    setRowHighlight,
+  ]);
+
+  const renderPagination = useCallback(() => (
+    <View style={styles.paginationContainer}>
+      <Pressable
+        style={[styles.paginationButton, currentPage === 1 && styles.paginationButtonDisabled]}
+        onPress={() => handlePageChange(currentPage - 1)}
+        accessibilityLabel="Go to previous page"
+        accessibilityRole="button"
+        disabled={currentPage === 1}
+      >
+        <Text style={styles.paginationButtonText}>Previous</Text>
+      </Pressable>
+      <Text style={styles.paginationText}>
+        Page {currentPage} of {totalPages}
+      </Text>
+      <Pressable
+        style={[styles.paginationButton, currentPage === totalPages && styles.paginationButtonDisabled]}
+        onPress={() => handlePageChange(currentPage + 1)}
+        accessibilityLabel="Go to next page"
+        accessibilityRole="button"
+        disabled={currentPage === totalPages}
+      >
+        <Text style={styles.paginationButtonText}>Next</Text>
+      </Pressable>
+    </View>
+  ), [totalPages, currentPage, handlePageChange]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
@@ -861,6 +861,7 @@ export default function JobList() {
               value={search}
               onChangeText={setSearch}
               accessibilityLabel="Search jobs"
+              accessibilityRole="search"
             />
             {search.length > 0 && (
               <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
@@ -885,12 +886,12 @@ export default function JobList() {
                   setUploadedFile(null);
                 }}
                 accessibilityLabel={`Switch to ${tab} jobs`}
+                accessibilityRole="button"
               >
                 <Text
                   style={[
                     styles.tabText,
-                    activeTab === (index === 0 ? 'hyper_local' : 'abroad') &&
-                      styles.activeTabText,
+                    activeTab === (index === 0 ? 'hyper_local' : 'abroad') && styles.activeTabText,
                   ]}
                 >
                   {tab}
@@ -905,7 +906,7 @@ export default function JobList() {
                     {
                       translateX: tabAnim.interpolate({
                         inputRange: [0, 1],
-                        outputRange: [0, screenWidth / 2 - 16] as number[],
+                        outputRange: [0, screenWidth / 2 - 16],
                       }),
                     },
                   ],
@@ -913,27 +914,34 @@ export default function JobList() {
               ]}
             />
           </View>
+          {isLoading && (
+            <View style={styles.loaderOverlay}>
+              <ActivityIndicator size="large" color="#4FD1C5" />
+              <Text style={styles.loaderText}>{isTabLoading ? 'Loading Jobs...' : 'Searching Jobs...'}</Text>
+            </View>
+          )}
           {renderTable()}
         </View>
 
         {renderPagination()}
 
         <Animated.View
-          style={[
-            styles.fabContainer,
-            {
-              transform: [
-                { translateY: fabAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -240] }) },
-              ],
-            },
-          ]}
-        >
+  style={[
+    styles.fabContainer,
+    {
+      transform: [
+        { translateY: fabAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -240] }) },
+      ],
+    },
+  ]}
+>
           {isFabOpen && (
             <>
               <TouchableOpacity
                 style={styles.fabSubButton}
                 onPress={() => setIsAddOpen(true)}
                 accessibilityLabel="Add new job"
+                accessibilityRole="button"
               >
                 <View style={styles.fabSubButtonContent}>
                   <Text style={styles.fabIcon}>➕</Text>
@@ -944,6 +952,7 @@ export default function JobList() {
                 style={styles.fabSubButton}
                 onPress={handleFileUpload}
                 accessibilityLabel="Upload Excel file"
+                accessibilityRole="button"
               >
                 <View style={styles.fabSubButtonContent}>
                   <Text style={styles.fabIcon}>⬆️</Text>
@@ -954,6 +963,7 @@ export default function JobList() {
                 style={styles.fabSubButton}
                 onPress={() => getUserData()}
                 accessibilityLabel="Refresh job list"
+                accessibilityRole="button"
               >
                 <View style={styles.fabSubButtonContent}>
                   <Text style={styles.fabIcon}>🔄</Text>
@@ -966,6 +976,7 @@ export default function JobList() {
             style={styles.fabButton}
             onPress={toggleFab}
             accessibilityLabel={isFabOpen ? 'Close actions' : 'Open actions'}
+            accessibilityRole="button"
           >
             <Text style={styles.fabIcon}>{isFabOpen ? '✖️' : '➕'}</Text>
           </TouchableOpacity>
@@ -995,10 +1006,18 @@ export default function JobList() {
           setEditJobDetails={setSelectedJob}
           getUserData={getUserData}
         />
+        {validationModalOpen && validationItem && (
+          <PassportValidationComponent
+            open={validationModalOpen}
+            onClose={() => setValidationModalOpen(false)}
+            item={validationItem}
+            handleGetUser={getUserData}
+          />
+        )}
       </View>
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -1012,15 +1031,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
     ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+      android: { elevation: 3 },
     }),
   },
   headerTitle: {
@@ -1069,15 +1081,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginHorizontal: 8,
     ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 2,
-      },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2 },
+      android: { elevation: 2 },
     }),
   },
   tab: {
@@ -1107,30 +1112,22 @@ const styles = StyleSheet.create({
     borderRadius: 1,
   },
   tableContainer: {
+    flex: 1,
+    marginHorizontal: 8,
+    marginVertical: 8,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    marginHorizontal: 8,
-    flex: 1,
-    height: screenHeight * 0.6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.2,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 5,
-      },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+      android: { elevation: 3 },
     }),
-  },
-  tableList: {
-    flexGrow: 0,
   },
   tableHeader: {
     flexDirection: 'row',
-    paddingVertical: 12,
     backgroundColor: '#F7FAFC',
+    paddingVertical: 12,
     borderBottomWidth: 2,
     borderBottomColor: '#E2E8F0',
   },
@@ -1149,82 +1146,45 @@ const styles = StyleSheet.create({
   },
   tableRow: {
     flexDirection: 'row',
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
+    height: 60,
   },
   tableCell: {
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 8,
-    paddingVertical: 6,
     borderRightWidth: 1,
     borderRightColor: '#E2E8F0',
   },
   tableCellText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#2D3748',
-    fontWeight: '500',
-  },
-  badge: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    alignSelf: 'center',
-  },
-  badgeText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  actionButton: {
-    width: 36,
-    height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 8,
+    textAlign: 'center',
   },
   iconText: {
-    fontSize: 20,
+    fontSize: 15,
   },
   paginationContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 16,
-    gap: 8,
+    padding: 12,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderColor: '#E2E8F0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
+    borderTopColor: '#E2E8F0',
+    gap: 16,
   },
   paginationButton: {
     backgroundColor: '#EDF2F7',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    minWidth: 48,
+    minWidth: 100,
     alignItems: 'center',
-  },
-  paginationButtonActive: {
-    backgroundColor: '#4FD1C5',
-    borderColor: '#4FD1C5',
   },
   paginationButtonDisabled: {
     opacity: 0.5,
@@ -1234,12 +1194,21 @@ const styles = StyleSheet.create({
     color: '#2D3748',
     fontWeight: '600',
   },
+  paginationText: {
+    fontSize: 14,
+    color: '#2D3748',
+    fontWeight: '400',
+  },
   loaderOverlay: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    padding: 20,
+    zIndex: 1000,
   },
   loaderContainer: {
     width: 60,
@@ -1249,15 +1218,8 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     backgroundColor: '#FFFFFF',
     ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 4,
-      },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 },
+      android: { elevation: 4 },
     }),
   },
   loaderIcon: {
@@ -1270,11 +1232,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontWeight: '500',
   },
-  emptyStateContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  emptyState: {
     padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 200,
   },
   emptyStateButton: {
     backgroundColor: '#4FD1C5',
@@ -1308,36 +1270,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
+      android: { elevation: 6 },
     }),
   },
   fabSubButton: {
     backgroundColor: '#4FD1C5',
-    width: 120,
-    height: 48,
+    width: 60,
+    height: 30,
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
     flexDirection: 'row',
     ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 4,
-      },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 },
+      android: { elevation: 4 },
     }),
   },
   fabSubButtonContent: {
@@ -1346,12 +1294,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   fabSubButtonLabel: {
-    fontSize: 14,
+    fontSize: 8,
     color: '#FFFFFF',
     fontWeight: '600',
   },
   fabIcon: {
-    fontSize: 24,
+    fontSize: 8,
     color: '#FFFFFF',
   },
   modalContainer: {
@@ -1367,15 +1315,8 @@ const styles = StyleSheet.create({
     width: '90%',
     maxWidth: 400,
     ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.25,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 5,
-      },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 6 },
+      android: { elevation: 5 },
     }),
   },
   modalHeader: {
@@ -1395,6 +1336,7 @@ const styles = StyleSheet.create({
   },
   modalBody: {
     marginBottom: 16,
+    maxHeight: screenHeight * 0.5,
   },
   modalText: {
     fontSize: 14,
@@ -1415,6 +1357,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
+    marginTop: 8,
   },
   modalButtonText: {
     fontSize: 16,
@@ -1422,3 +1365,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+export default JobList;

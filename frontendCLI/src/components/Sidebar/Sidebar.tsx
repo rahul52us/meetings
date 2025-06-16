@@ -115,6 +115,13 @@ const Sidebar = ({ visible, onClose, setCurrentScreen }: SidebarProps) => {
       },
     },
     {
+      label: 'Agents',
+      onPress: () => {
+        setCurrentScreen?.('Agents');
+        slideOut();
+      },
+    },
+    {
       label: 'Logout',
       onPress: () => {
         logout();
