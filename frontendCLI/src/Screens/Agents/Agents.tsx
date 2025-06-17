@@ -6,7 +6,6 @@ import {
   TextInput,
   StyleSheet,
   FlatList,
-  Modal,
   ScrollView,
   ActivityIndicator,
   Platform,
@@ -15,39 +14,19 @@ import {
   Animated,
   Alert,
   TouchableOpacity,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { appRequest } from '../../routes';
 import { maskAadhaar } from '../../utils/function';
 import AadharValidationComponent from '../../components/component/AadharValidations';
-
-interface User {
-  _id: string;
-  name: string;
-  email: string;
-  username: string;
-  is_active: boolean;
-  user?: { id: string }; // For Aadhaar validation
-  profile?: {
-    profileId?: string;
-    profileDetails?: {
-      aadharNumber?: string;
-      agentType?: string;
-    };
-  };
-}
-
-interface DuplicateAgent {
-  name: string;
-  moNumber: string;
-}
-
-interface ApiResponse {
-  status: string;
-  message?: string;
-  data?: User[];
-  totalPages?: number;
-}
+import { COLUMN_WIDTHS, columns } from './utils/constant';
+import ViewModal from './component/ViewModal';
+import EditModal from './component/EditModal';
+import CreateModal from './component/CreateModal';
+import DocumentPicker, { DocumentPickerResponse } from 'react-native-document-picker';
+import RNFS from 'react-native-fs';
+import { useUser } from '../../components/authGuard/UserContext';
 
 interface AppContextType {
   toastNotify: (params: { title: string; message: string; type?: string }) => void;
@@ -58,17 +37,6 @@ const AppContext = React.createContext<AppContextType>({
 });
 
 const PaginationLimit = 10;
-
-const COLUMN_WIDTHS = {
-  profileId: 100,
-  name: 160,
-  email: 180,
-  username: 120,
-  aadharNumber: 120,
-  agentType: 120,
-  isActive: 100,
-  actions: 80,
-};
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -95,25 +63,42 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
   }
 }
 
-const CreateAgentExcel: React.FC = () => {
-  const { toastNotify } = useContext(AppContext);
+const AgentIndex: React.FC = () => {
+  const {toastNotify} = useUser()
   const [modalState, setModalState] = useState<{
-    type: 'none' | 'duplicateAgents' | 'agentDetails' | 'addOptions';
-    data?: User | DuplicateAgent[];
+    type: 'none' | 'duplicateAgents' | 'viewDetails' | 'addOptions' | 'editUser' | 'createAgent';
+    data?: any;
   }>({ type: 'none' });
   const [validationModalOpen, setValidationModalOpen] = useState(false);
-  const [validationItem, setValidationItem] = useState<User | null>(null);
+  const [validationItem, setValidationItem] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [data, setData] = useState<User[]>([]);
-  const [duplicateData, setDuplicateData] = useState<DuplicateAgent[]>([]);
+  const [data, setData] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedAgent, setSelectedAgent] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
   const [rowHighlight, setRowHighlight] = useState<string | null>(null);
+  const [bulkUploadLoading, setBulkUploadLoading] = useState(false);
   const modalFadeAnim = useState(new Animated.Value(0))[0];
+
+  useEffect(() => {
+    if (modalState.type === 'addOptions') {
+      Animated.timing(modalFadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(modalFadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [modalState.type, modalFadeAnim]);
+
 
   const debounce = useCallback((func: Function, delay: number) => {
     let timeoutId: NodeJS.Timeout;
@@ -139,17 +124,15 @@ const CreateAgentExcel: React.FC = () => {
         } else {
           setData([]);
           toastNotify({
-            title: 'Error',
-            message: response.message || 'Failed to fetch agents',
-            type: 'error',
+            status: 'error',
+            title: response.message || 'Failed to fetch agents',
           });
         }
       } catch (error: any) {
         console.error('Get Agents Error:', error);
         toastNotify({
-          title: 'Error',
-          message: error.message || 'Failed to fetch agents',
-          type: 'error',
+          status: 'error',
+          title: error.message || 'Failed to fetch agents',
         });
       } finally {
         setLoading(false);
@@ -183,21 +166,100 @@ const CreateAgentExcel: React.FC = () => {
     [totalPages, handleGetUser]
   );
 
-  const handleFileUpload = useCallback(() => {
-    toastNotify({
-      title: 'Feature Unavailable',
-      message: 'Bulk agent upload is not implemented yet.',
+const handleBulkUpload = useCallback(async () => {
+  try {
+    setBulkUploadLoading(true);
+
+    const result = await DocumentPicker.pick({
+      type: [DocumentPicker.types.xlsx, DocumentPicker.types.xls],
     });
-    setModalState({ type: 'none' });
-  }, [toastNotify]);
+
+    if (!result || !Array.isArray(result) || result.length === 0) {
+      toastNotify({
+        status: 'error',
+        title: 'No file selected',
+      });
+      return;
+    }
+
+    const file = result[0];
+
+    if (!file.uri || !file.name) {
+      toastNotify({
+        status: 'error',
+        title: 'Invalid file selected',
+      });
+      return;
+    }
+
+    if (!file.name.match(/\.(xlsx|xls)$/i)) {
+      toastNotify({
+        status: 'error',
+        title: 'Please select an Excel file (.xlsx or .xls)',
+      });
+      return;
+    }
+
+    // Read file as base64
+    const base64 = await RNFS.readFile(file.uri, 'base64');
+
+    // Convert base64 to binary string
+    const binary = atob(base64);
+
+    // Convert binary string to byte array
+    const byteArray = [];
+    for (let i = 0; i < binary.length; i++) {
+      byteArray.push(binary.charCodeAt(i));
+    }
+
+    // Format data as stringified array
+    const payload = [{ file: JSON.stringify(byteArray) }];
+
+    // Send to backend
+    const response: any = await appRequest('agent', 'createExcel', payload);
+
+    if (response.status !== 'error') {
+      setData(response.data || []);
+      toastNotify({
+        status: 'success',
+        title: 'Uploaded Successfully',
+      });
+      handleGetUser(1);
+      setModalState({ type: 'none' });
+    } else {
+      toastNotify({
+        status: 'error',
+        title: 'Upload Failed',
+      });
+    }
+  } catch (error: any) {
+    console.error('Bulk Upload Error:', error);
+    if (DocumentPicker.isCancel(error)) {
+      toastNotify({
+        status: 'error',
+        title: 'File selection cancelled',
+      });
+    } else {
+      toastNotify({
+        status: 'error',
+        title: 'Upload Failed',
+      });
+    }
+  } finally {
+    setBulkUploadLoading(false);
+  }
+}, [toastNotify, handleGetUser]);
+
+
 
   const handleAddAgent = useCallback(() => {
-    toastNotify({
-      title: 'Coming Soon',
-      message: 'Create agent form not implemented',
-    });
-    setModalState({ type: 'none' });
-  }, [toastNotify]);
+    setModalState({ type: 'createAgent' });
+  }, []);
+
+  const handleEditAgent = useCallback((user: any) => {
+    setSelectedUser(user);
+    setModalState({ type: 'editUser', data: user });
+  }, []);
 
   const handleSearch = useCallback((value: string) => {
     setSearch(value);
@@ -216,17 +278,6 @@ const CreateAgentExcel: React.FC = () => {
     setCurrentPage(1);
     handleGetUser(1, '');
   }, [handleGetUser]);
-
-  const columns = [
-    { key: 'profileId', title: 'Agent ID', width: COLUMN_WIDTHS.profileId },
-    { key: 'name', title: 'Name', width: COLUMN_WIDTHS.name },
-    { key: 'email', title: 'Email', width: COLUMN_WIDTHS.email },
-    { key: 'username', title: 'Mobile No.', width: COLUMN_WIDTHS.username },
-    { key: 'aadharNumber', title: 'Aadhar No.', width: COLUMN_WIDTHS.aadharNumber },
-    { key: 'agentType', title: 'Agent Type', width: COLUMN_WIDTHS.agentType },
-    { key: 'isActive', title: 'Verified', width: COLUMN_WIDTHS.isActive },
-    { key: 'actions', title: 'Actions', width: COLUMN_WIDTHS.actions },
-  ];
 
   const totalTableWidth = columns.reduce((sum, col) => sum + col.width, 0);
 
@@ -253,12 +304,12 @@ const CreateAgentExcel: React.FC = () => {
           },
         ]}
         onPress={() => {
-          setSelectedAgent(item);
-          setModalState({ type: 'agentDetails', data: item });
+          setSelectedUser(item);
+          setModalState({ type: 'viewDetails', data: item });
         }}
         onPressIn={() => setRowHighlight(item._id)}
         onPressOut={() => setRowHighlight(null)}
-        accessibilityLabel={`View details for agent ${item.name || 'Unknown'}`}
+        accessibilityLabel={`View details for user ${item.name || 'Unknown'}`}
         accessibilityRole="button"
       >
         <Text style={[styles.tableCell, { width: COLUMN_WIDTHS.profileId }]} numberOfLines={1} ellipsizeMode="tail">
@@ -277,13 +328,16 @@ const CreateAgentExcel: React.FC = () => {
           style={[styles.tableCell, { width: COLUMN_WIDTHS.aadharNumber }]}
           onPress={() => {
             if (!item.is_active) {
-              setValidationItem(item);
+              setValidationItem({ ...item, user: item?._id });
               setValidationModalOpen(true);
             } else {
-              toastNotify({ title: 'Already Verified', message: 'Aadhaar is already validated.' });
+              toastNotify({
+                status: 'success',
+                title: 'Aadhaar is already validated.',
+              });
             }
           }}
-          accessibilityLabel={`Validate Aadhaar for agent ${item.name || 'Unknown'}`}
+          accessibilityLabel={`Validate Aadhaar for user ${item.name || 'Unknown'}`}
           accessibilityRole="button"
         >
           <Text style={styles.tableCellText} numberOfLines={1} ellipsizeMode="tail">
@@ -298,8 +352,8 @@ const CreateAgentExcel: React.FC = () => {
         </Text>
         <View style={[styles.tableCell, { width: COLUMN_WIDTHS.actions }]}>
           <Pressable
-            onPress={() => toastNotify({ title: 'Coming Soon', message: 'Edit agent not implemented' })}
-            accessibilityLabel={`Edit agent ${item.name || 'Unknown'}`}
+            onPress={() => handleEditAgent(item)}
+            accessibilityLabel={`Edit user ${item.name || 'Unknown'}`}
             accessibilityRole="button"
           >
             <Text style={styles.actionText}>Edit</Text>
@@ -307,261 +361,114 @@ const CreateAgentExcel: React.FC = () => {
         </View>
       </Pressable>
     ),
-    [totalTableWidth, rowHighlight, toastNotify]
+    [totalTableWidth, rowHighlight, toastNotify, handleEditAgent]
   );
-
-  const renderAgentDetailsModal = useCallback(() => {
-    if (!selectedAgent || modalState.type !== 'agentDetails') return null;
-    Animated.timing(modalFadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
-    return (
-      <Modal
-        visible={modalState.type === 'agentDetails'}
-        animationType="none"
-        transparent={true}
-        onRequestClose={() => {
-          Animated.timing(modalFadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() =>
-            setModalState({ type: 'none' })
-          );
-        }}
-      >
-        <View style={styles.modalContainer}>
-          <Animated.View
-            style={[
-              styles.modalContent,
-              {
-                opacity: modalFadeAnim,
-                transform: [{ scale: modalFadeAnim.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] }) }],
-              },
-            ]}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Agent Details</Text>
-              <Pressable
-                onPress={() => {
-                  Animated.timing(modalFadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() =>
-                    setModalState({ type: 'none' })
-                  );
-                }}
-                accessibilityLabel={`Close details for agent ${selectedAgent.name || 'Unknown'}`}
-                accessibilityRole="button"
-              >
-                <Text style={styles.modalClose}>X</Text>
-              </Pressable>
-            </View>
-            <ScrollView contentContainerStyle={styles.modalBody}>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Agent ID:</Text>
-                <Text style={styles.detailValue}>{selectedAgent.profile?.profileId || 'N/A'}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Name:</Text>
-                <Text style={styles.detailValue}>{selectedAgent.name || 'N/A'}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Email:</Text>
-                <Text style={styles.detailValue}>{selectedAgent.email || 'N/A'}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Mobile No.:</Text>
-                <Text style={styles.detailValue}>{selectedAgent.username || 'N/A'}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Aadhaar No.:</Text>
-                <Text style={styles.detailValue}>{maskAadhaar(selectedAgent.profile?.profileDetails?.aadharNumber)}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Agent Type:</Text>
-                <Text style={styles.detailValue}>{selectedAgent.profile?.profileDetails?.agentType || 'N/A'}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Verified:</Text>
-                <Text style={styles.detailValue}>{selectedAgent.is_active ? 'Yes' : 'No'}</Text>
-              </View>
-            </ScrollView>
-            <View style={styles.modalFooter}>
-              <Pressable
-                style={[styles.button, styles.cancelButton]}
-                onPress={() => {
-                  Animated.timing(modalFadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() =>
-                    setModalState({ type: 'none' })
-                  );
-                }}
-                accessibilityLabel={`Close details for agent ${selectedAgent.name || 'Unknown'}`}
-                accessibilityRole="button"
-              >
-                <Text style={styles.cancelButtonText}>Close</Text>
-              </Pressable>
-            </View>
-          </Animated.View>
-        </View>
-      </Modal>
-    );
-  }, [modalState, selectedAgent, modalFadeAnim]);
-
-  const renderDuplicateAgentsModal = useCallback(() => {
-    if (modalState.type !== 'duplicateAgents') return null;
-    Animated.timing(modalFadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
-    return (
-      <Modal
-        visible={modalState.type === 'duplicateAgents'}
-        animationType="none"
-        transparent={true}
-        onRequestClose={() => {
-          Animated.timing(modalFadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() =>
-            setModalState({ type: 'none' })
-          );
-        }}
-      >
-        <View style={styles.modalContainer}>
-          <Animated.View
-            style={[
-              styles.modalContent,
-              {
-                opacity: modalFadeAnim,
-                transform: [{ scale: modalFadeAnim.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] }) }],
-              },
-            ]}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Duplicate Agents</Text>
-              <Pressable
-                onPress={() => {
-                  Animated.timing(modalFadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() =>
-                    setModalState({ type: 'none' })
-                  );
-                }}
-                accessibilityLabel="Close duplicate agents modal"
-                accessibilityRole="button"
-              >
-                <Text style={styles.modalClose}>X</Text>
-              </Pressable>
-            </View>
-            <ScrollView contentContainerStyle={styles.modalBody}>
-              {duplicateData.length > 0 ? (
-                <View style={styles.tableContainer}>
-                  <View style={[styles.tableHeader, { minWidth: 300 }]}>
-                    <Text style={[styles.tableHeaderText, { width: 150 }]}>Name</Text>
-                    <Text style={[styles.tableHeaderText, { width: 150 }]}>Mobile Number</Text>
-                  </View>
-                  <FlatList
-                    data={duplicateData}
-                    renderItem={({ item, index }) => (
-                      <View
-                        style={[
-                          styles.tableRow,
-                          { minWidth: 300, backgroundColor: index % 2 === 0 ? '#FFFFFF' : '#F9FAFB' },
-                        ]}
-                      >
-                        <Text style={[styles.tableCell, { width: 150 }]} numberOfLines={1} ellipsizeMode="tail">
-                          {item.name}
-                        </Text>
-                        <Text style={[styles.tableCell, { width: 150 }]} numberOfLines={1} ellipsizeMode="tail">
-                          {item.moNumber}
-                        </Text>
-                      </View>
-                    )}
-                    keyExtractor={(_, index) => `duplicate-${index}`}
-                  />
-                </View>
-              ) : (
-                <Text style={styles.noDataText}>No duplicates found</Text>
-              )}
-            </ScrollView>
-            <View style={styles.modalFooter}>
-              <Pressable
-                style={[styles.button, styles.cancelButton]}
-                onPress={() => {
-                  Animated.timing(modalFadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() =>
-                    setModalState({ type: 'none' })
-                  );
-                }}
-                accessibilityLabel="Close duplicate agents modal"
-                accessibilityRole="button"
-              >
-                <Text style={styles.cancelButtonText}>Close</Text>
-              </Pressable>
-            </View>
-          </Animated.View>
-        </View>
-      </Modal>
-    );
-  }, [modalState, duplicateData, modalFadeAnim]);
 
   const renderAddOptionsModal = useCallback(() => {
     if (modalState.type !== 'addOptions') return null;
-    Animated.timing(modalFadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+
     return (
-      <Modal
-        visible={modalState.type === 'addOptions'}
-        animationType="none"
-        transparent={true}
-        onRequestClose={() => {
-          Animated.timing(modalFadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() =>
-            setModalState({ type: 'none' })
-          );
-        }}
-      >
-        <View style={styles.modalContainer}>
-          <Animated.View
-            style={[
-              styles.modalContent,
-              {
-                opacity: modalFadeAnim,
-                transform: [{ scale: modalFadeAnim.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] }) }],
-              },
-            ]}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add Agent Options</Text>
-              <Pressable
-                onPress={() => {
-                  Animated.timing(modalFadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() =>
-                    setModalState({ type: 'none' })
-                  );
-                }}
-                accessibilityLabel="Close add agent options modal"
-                accessibilityRole="button"
-              >
-                <Text style={styles.modalClose}>X</Text>
-              </Pressable>
-            </View>
-            <View style={styles.modalBody}>
-              <Pressable
-                style={[styles.button, styles.modalButton]}
-                onPress={handleAddAgent}
-                accessibilityLabel="Add single agent"
-                accessibilityRole="button"
-              >
-                <Text style={styles.buttonText}>Add Single Agent</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.button, styles.modalButton, styles.buttonDisabled]}
-                disabled={true}
-                accessibilityLabel="Add bulk agents (disabled)"
-                accessibilityRole="button"
-              >
-                <Text style={styles.buttonText}>Add Bulk Agents</Text>
-              </Pressable>
-            </View>
-            <View style={styles.modalFooter}>
-              <Pressable
-                style={[styles.button, styles.cancelButton]}
-                onPress={() => {
-                  Animated.timing(modalFadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() =>
-                    setModalState({ type: 'none' })
-                  );
-                }}
-                accessibilityLabel="Close add agent options modal"
-                accessibilityRole="button"
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </Pressable>
-            </View>
-          </Animated.View>
-        </View>
-      </Modal>
+<Modal
+  visible
+  animationType="fade"
+  transparent
+  onRequestClose={() => setModalState({ type: 'none' })}
+>
+  <View style={styles.modalContainer}>
+    <Animated.View
+      style={[
+        styles.modalContent,
+        {
+          opacity: modalFadeAnim,
+          transform: [
+            {
+              scale: modalFadeAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.95, 1],
+              }),
+            },
+          ],
+        },
+      ]}
+    >
+      {/* Header */}
+
+
+      {/* Divider */}
+      <View style={{ height: 1, backgroundColor: '#E5E7EB' }} />
+
+      {/* Body */}
+      <View style={[styles.modalBody, { alignItems: 'center', gap: 16 }]}>
+        <TouchableOpacity
+          style={[
+            styles.modalButton,
+            styles.button,
+            {
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              width: '100%',
+            },
+          ]}
+          onPress={handleAddAgent}
+          accessibilityLabel="Add single agent"
+          accessibilityRole="button"
+          activeOpacity={0.85}
+        >
+          <Text style={styles.buttonText}>👤 Add Single Agent</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.modalButton,
+            styles.button,
+            {
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              width: '100%',
+            },
+            bulkUploadLoading && styles.buttonDisabled,
+          ]}
+          onPress={handleBulkUpload}
+          disabled={bulkUploadLoading}
+          accessibilityLabel="Add bulk agents"
+          accessibilityRole="button"
+          activeOpacity={0.85}
+        >
+          <Text style={styles.buttonText}>
+            📁 {bulkUploadLoading ? 'Uploading...' : 'Add Bulk Agents'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Footer */}
+      <View style={[styles.modalFooter, { justifyContent: 'center' }]}>
+        <TouchableOpacity
+          style={[
+            styles.cancelButton,
+            {
+              minWidth: 140,
+              justifyContent: 'center',
+              alignItems: 'center',
+              borderColor: '#008080',
+            },
+          ]}
+          onPress={() => setModalState({ type: 'none' })}
+          accessibilityLabel="Cancel modal"
+          accessibilityRole="button"
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.cancelButtonText, { fontSize: 15 }]}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
+    </Animated.View>
+  </View>
+</Modal>
     );
-  }, [modalState, handleAddAgent, modalFadeAnim]);
+  }, [modalState, handleAddAgent, handleBulkUpload, bulkUploadLoading, modalFadeAnim]);
 
   return (
     <ErrorBoundary>
@@ -593,7 +500,7 @@ const CreateAgentExcel: React.FC = () => {
             <Pressable
               style={styles.iconButton}
               onPress={handleRefresh}
-              accessibilityLabel="Refresh agent list"
+              accessibilityLabel="Refresh user list"
               accessibilityRole="button"
             >
               <Text style={styles.buttonText}>Refresh</Text>
@@ -601,7 +508,7 @@ const CreateAgentExcel: React.FC = () => {
             <Pressable
               style={styles.iconButton}
               onPress={() => setModalState({ type: 'addOptions' })}
-              accessibilityLabel="Open add agent options"
+              accessibilityLabel="Open add user options"
               accessibilityRole="button"
             >
               <Text style={styles.buttonText}>Add</Text>
@@ -612,7 +519,9 @@ const CreateAgentExcel: React.FC = () => {
         {loading && (
           <View style={styles.loaderOverlay}>
             <ActivityIndicator size="large" color="#008080" />
-            <Text style={styles.loadingText}>{initialLoad ? 'Loading Agents...' : 'Searching Agents...'}</Text>
+            <Text style={styles.loadingText}>
+              {initialLoad ? 'Loading Agents...' : 'Searching Agents...'}
+            </Text>
           </View>
         )}
 
@@ -671,8 +580,24 @@ const CreateAgentExcel: React.FC = () => {
           </Pressable>
         </View>
 
-        {renderAgentDetailsModal()}
-        {renderDuplicateAgentsModal()}
+        <ViewModal
+          isOpen={modalState.type === 'viewDetails'}
+          user={selectedUser}
+          onClose={() => setModalState({ type: 'none' })}
+        />
+        {modalState.type === 'editUser' && (
+          <EditModal
+            isOpen={modalState.type === 'editUser'}
+            data={selectedUser}
+            onClose={() => setModalState({ type: 'none' })}
+            fetchRecords={handleGetUser}
+          />
+        )}
+        <CreateModal
+          isOpen={modalState.type === 'createAgent'}
+          onClose={() => setModalState({ type: 'none' })}
+          fetchRecords={handleGetUser}
+        />
         {renderAddOptionsModal()}
         {validationModalOpen && validationItem && (
           <AadharValidationComponent
@@ -752,29 +677,28 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#008080',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalButton: {
-    marginVertical: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    minWidth: 150,
   },
   buttonDisabled: {
-    opacity: 0.6,
+    backgroundColor: '#D1D5DB',
+    opacity: 0.5,
   },
   buttonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
   },
   cancelButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#EF4444',
+    color: '#008080',
   },
   actionText: {
     fontSize: 14,
@@ -914,21 +838,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#D1D5DB',
+    borderBottomColor: '#E5E7EB',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: '600',
     color: '#008080',
+    flex: 1,
   },
-  modalClose: {
-    fontSize: 18,
-    color: '#6B7280',
+  closeButton: {
+    padding: 10,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+  },
+  closeText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#374151',
   },
   modalBody: {
     padding: 16,
+    gap: 12,
   },
   modalFooter: {
     flexDirection: 'row',
@@ -936,15 +869,14 @@ const styles = StyleSheet.create({
     padding: 16,
     borderTopWidth: 1,
     borderTopColor: '#D1D5DB',
-    gap: 12,
   },
   cancelButton: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#EF4444',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 6,
+    borderColor: '#D1D5DB',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
   },
   detailRow: {
     flexDirection: 'row',
@@ -985,4 +917,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CreateAgentExcel;
+export default AgentIndex;
