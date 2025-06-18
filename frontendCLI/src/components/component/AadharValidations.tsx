@@ -132,10 +132,6 @@ const AadharValidationComponent: React.FC<Props> = ({ open, onClose, item, handl
               : 'OTP verification failed';
           setErrorMessage(errMsg);
         } else {
-          console.log(response?.data?.message?.message?.details)
-
-          console.log('the user are', item.user)
-
           const updateResponse: any = await appRequest('user', 'updateAadharDetails', {
             user: item?.user,
             aadharDetails: response?.data?.message?.message?.details || {},
@@ -234,27 +230,21 @@ const AadharValidationComponent: React.FC<Props> = ({ open, onClose, item, handl
               </Pressable>
             ) : (
               <Pressable
-  style={[
-    styles.button,
-    loading ? styles.buttonDisabled : null,
-  ]}
-  onPress={generateOtp}
-  disabled={loading}
-  accessibilityLabel="Generate OTP"
-  accessibilityRole="button"
->
-  <Text style={[styles.buttonText, styles.lightButtonText]}>Generate OTP</Text>
-</Pressable>
-
+                style={[styles.button, loading ? styles.buttonDisabled : null]}
+                onPress={generateOtp}
+                disabled={loading}
+                accessibilityLabel="Generate OTP"
+                accessibilityRole="button"
+              >
+                <Text style={styles.buttonText}>Generate OTP</Text>
+              </Pressable>
             )}
             <Pressable
               style={[styles.button, styles.cancelButton, loading ? styles.buttonDisabled : null]}
               onPress={loading ? undefined : onClose}
               disabled={loading}
-              accessibilityLabel="Cancel"
-              accessibilityRole="button"
             >
-              <Text style={styles.buttonText}>Cancel</Text>
+              <Text style={[styles.buttonText, styles.cancelText]}>Cancel</Text>
             </Pressable>
           </View>
         </Animated.View>
@@ -287,20 +277,15 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#D1D5DB',
-    width: '100%',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#008080',
-    flexShrink: 1,
   },
   modalClose: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#111827',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    fontSize: 18,
+    color: '#6B7280',
   },
   modalBody: {
     padding: 16,
@@ -384,9 +369,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFF1F1',
     borderWidth: 1,
     borderColor: '#EF4444',
+
+  },
+  cancelText: {
+    color: 'red',
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -394,16 +383,8 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 14,
     fontWeight: '600',
-  },
-
-  lightButtonText: {
     color: '#FFFFFF',
   },
-
-  darkButtonText: {
-    color: '#111827',
-  },
 });
-
 
 export default AadharValidationComponent;

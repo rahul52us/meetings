@@ -23,7 +23,6 @@ const AuthGuard = ({ children }: Props) => {
             const loggedIn = await appRequest('user', 'isLoggedIn');
             if (loggedIn === true) {
                 const response : any = await appRequest('user', 'getUserDetails');
-                console.log('the get accoount details response are', response)
                 if (response && response.status !== "error") {
                     setAccountDetails(response);
                     setIsLoggedIn(true)

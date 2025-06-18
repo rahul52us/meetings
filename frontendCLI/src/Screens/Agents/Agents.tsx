@@ -12,7 +12,6 @@ import {
   Dimensions,
   RefreshControl,
   Animated,
-  Alert,
   TouchableOpacity,
   Modal,
 } from 'react-native';
@@ -24,19 +23,10 @@ import { COLUMN_WIDTHS, columns } from './utils/constant';
 import ViewModal from './component/ViewModal';
 import EditModal from './component/EditModal';
 import CreateModal from './component/CreateModal';
-import DocumentPicker, { DocumentPickerResponse } from 'react-native-document-picker';
+import DocumentPicker from 'react-native-document-picker';
 import RNFS from 'react-native-fs';
 import { useUser } from '../../components/authGuard/UserContext';
-
-interface AppContextType {
-  toastNotify: (params: { title: string; message: string; type?: string }) => void;
-}
-
-const AppContext = React.createContext<AppContextType>({
-  toastNotify: ({ title, message }) => Alert.alert(title, message),
-});
-
-const PaginationLimit = 10;
+import { PaginationLimit } from '../../utils/constant';
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -64,7 +54,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 }
 
 const AgentIndex: React.FC = () => {
-  const {toastNotify} = useUser()
+  const { toastNotify } = useUser();
   const [modalState, setModalState] = useState<{
     type: 'none' | 'duplicateAgents' | 'viewDetails' | 'addOptions' | 'editUser' | 'createAgent';
     data?: any;
@@ -99,7 +89,6 @@ const AgentIndex: React.FC = () => {
     }
   }, [modalState.type, modalFadeAnim]);
 
-
   const debounce = useCallback((func: Function, delay: number) => {
     let timeoutId: NodeJS.Timeout;
     return (...args: any[]) => {
@@ -109,7 +98,8 @@ const AgentIndex: React.FC = () => {
   }, []);
 
   const handleGetUser = useCallback(
-    async (page = currentPage, value = search) => {
+    async (page: number, value: string) => {
+      console.log(`Fetching page ${page} with search "${value}"`); // Debug log
       try {
         setLoading(true);
         const response: any = await appRequest('agent', 'getAgents', {
@@ -139,118 +129,120 @@ const AgentIndex: React.FC = () => {
         setRefreshing(false);
       }
     },
-    [currentPage, search, toastNotify]
+    [toastNotify]
   );
 
   const debouncedSearch = useMemo(
-    () => debounce((value: string) => handleGetUser(1, value), 1000),
+    () =>
+      debounce((value: string) => {
+        setCurrentPage(1); // Reset to page 1 on search
+        handleGetUser(1, value);
+      }, 1000),
     [debounce, handleGetUser]
   );
 
   useEffect(() => {
     if (initialLoad) {
-      handleGetUser();
+      handleGetUser(1, '');
       setInitialLoad(false);
     } else {
       debouncedSearch(search);
     }
-  }, [search, handleGetUser, initialLoad, debouncedSearch]);
+  }, [search, initialLoad, debouncedSearch, handleGetUser]);
 
   const handlePageChange = useCallback(
     (page: number) => {
       if (page >= 1 && page <= totalPages) {
         setCurrentPage(page);
-        handleGetUser(page);
+        handleGetUser(page, search);
       }
     },
-    [totalPages, handleGetUser]
+    [totalPages, handleGetUser, search]
   );
 
-const handleBulkUpload = useCallback(async () => {
-  try {
-    setBulkUploadLoading(true);
+  const handleBulkUpload = useCallback(async () => {
+    try {
+      setBulkUploadLoading(true);
 
-    const result = await DocumentPicker.pick({
-      type: [DocumentPicker.types.xlsx, DocumentPicker.types.xls],
-    });
-
-    if (!result || !Array.isArray(result) || result.length === 0) {
-      toastNotify({
-        status: 'error',
-        title: 'No file selected',
+      const result = await DocumentPicker.pick({
+        type: [DocumentPicker.types.xlsx, DocumentPicker.types.xls],
       });
-      return;
+
+      if (!result || !Array.isArray(result) || result.length === 0) {
+        toastNotify({
+          status: 'error',
+          title: 'No file selected',
+        });
+        return;
+      }
+
+      const file = result[0];
+
+      if (!file.uri || !file.name) {
+        toastNotify({
+          status: 'error',
+          title: 'Invalid file selected',
+        });
+        return;
+      }
+
+      if (!file.name.match(/\.(xlsx|xls)$/i)) {
+        toastNotify({
+          status: 'error',
+          title: 'Please select an Excel file (.xlsx or .xls)',
+        });
+        return;
+      }
+
+      // Read file as base64
+      const base64 = await RNFS.readFile(file.uri, 'base64');
+
+      // Convert base64 to binary string
+      const binary = atob(base64);
+
+      // Convert binary string to byte array
+      const byteArray = [];
+      for (let i = 0; i < binary.length; i++) {
+        byteArray.push(binary.charCodeAt(i));
+      }
+
+      // Format data as stringified array
+      const payload = [{ file: JSON.stringify(byteArray) }];
+
+      // Send to backend
+      const response: any = await appRequest('agent', 'createExcel', payload);
+
+      if (response.status !== 'error') {
+        setData(response.data || []);
+        toastNotify({
+          status: 'success',
+          title: 'Uploaded Successfully',
+        });
+        handleGetUser(1, search);
+        setModalState({ type: 'none' });
+      } else {
+        toastNotify({
+          status: 'error',
+          title: 'Upload Failed',
+        });
+      }
+    } catch (error: any) {
+      console.error('Bulk Upload Error:', error);
+      if (DocumentPicker.isCancel(error)) {
+        toastNotify({
+          status: 'error',
+          title: 'File selection cancelled',
+        });
+      } else {
+        toastNotify({
+          status: 'error',
+          title: 'Upload Failed',
+        });
+      }
+    } finally {
+      setBulkUploadLoading(false);
     }
-
-    const file = result[0];
-
-    if (!file.uri || !file.name) {
-      toastNotify({
-        status: 'error',
-        title: 'Invalid file selected',
-      });
-      return;
-    }
-
-    if (!file.name.match(/\.(xlsx|xls)$/i)) {
-      toastNotify({
-        status: 'error',
-        title: 'Please select an Excel file (.xlsx or .xls)',
-      });
-      return;
-    }
-
-    // Read file as base64
-    const base64 = await RNFS.readFile(file.uri, 'base64');
-
-    // Convert base64 to binary string
-    const binary = atob(base64);
-
-    // Convert binary string to byte array
-    const byteArray = [];
-    for (let i = 0; i < binary.length; i++) {
-      byteArray.push(binary.charCodeAt(i));
-    }
-
-    // Format data as stringified array
-    const payload = [{ file: JSON.stringify(byteArray) }];
-
-    // Send to backend
-    const response: any = await appRequest('agent', 'createExcel', payload);
-
-    if (response.status !== 'error') {
-      setData(response.data || []);
-      toastNotify({
-        status: 'success',
-        title: 'Uploaded Successfully',
-      });
-      handleGetUser(1);
-      setModalState({ type: 'none' });
-    } else {
-      toastNotify({
-        status: 'error',
-        title: 'Upload Failed',
-      });
-    }
-  } catch (error: any) {
-    console.error('Bulk Upload Error:', error);
-    if (DocumentPicker.isCancel(error)) {
-      toastNotify({
-        status: 'error',
-        title: 'File selection cancelled',
-      });
-    } else {
-      toastNotify({
-        status: 'error',
-        title: 'Upload Failed',
-      });
-    }
-  } finally {
-    setBulkUploadLoading(false);
-  }
-}, [toastNotify, handleGetUser]);
-
-
+  }, [toastNotify, handleGetUser, search]);
 
   const handleAddAgent = useCallback(() => {
     setModalState({ type: 'createAgent' });
@@ -263,7 +255,6 @@ const handleBulkUpload = useCallback(async () => {
 
   const handleSearch = useCallback((value: string) => {
     setSearch(value);
-    setCurrentPage(1);
   }, []);
 
   const handleClearSearch = useCallback(() => {
@@ -368,105 +359,102 @@ const handleBulkUpload = useCallback(async () => {
     if (modalState.type !== 'addOptions') return null;
 
     return (
-<Modal
-  visible
-  animationType="fade"
-  transparent
-  onRequestClose={() => setModalState({ type: 'none' })}
->
-  <View style={styles.modalContainer}>
-    <Animated.View
-      style={[
-        styles.modalContent,
-        {
-          opacity: modalFadeAnim,
-          transform: [
-            {
-              scale: modalFadeAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0.95, 1],
-              }),
-            },
-          ],
-        },
-      ]}
-    >
-      {/* Header */}
+      <Modal
+        visible
+        animationType="fade"
+        transparent
+        onRequestClose={() => setModalState({ type: 'none' })}
+      >
+        <View style={styles.modalContainer}>
+          <Animated.View
+            style={[
+              styles.modalContent,
+              {
+                opacity: modalFadeAnim,
+                transform: [
+                  {
+                    scale: modalFadeAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.95, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            {/* Divider */}
+            <View style={{ height: 1, backgroundColor: '#E5E7EB' }} />
 
+            {/* Body */}
+            <View style={[styles.modalBody, { alignItems: 'center', gap: 16 }]}>
+              <TouchableOpacity
+                style={[
+                  styles.modalButton,
+                  styles.button,
+                  {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    width: '100%',
+                  },
+                ]}
+                onPress={handleAddAgent}
+                accessibilityLabel="Add single agent"
+                accessibilityRole="button"
+                activeOpacity={0.85}
+              >
+                <Text style={styles.buttonText}>👤 Add Single Agent</Text>
+              </TouchableOpacity>
 
-      {/* Divider */}
-      <View style={{ height: 1, backgroundColor: '#E5E7EB' }} />
+              <TouchableOpacity
+                style={[
+                  styles.modalButton,
+                  styles.button,
+                  {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    width: '100%',
+                  },
+                  bulkUploadLoading && styles.buttonDisabled,
+                ]}
+                onPress={handleBulkUpload}
+                disabled={bulkUploadLoading}
+                accessibilityLabel="Add bulk agents"
+                accessibilityRole="button"
+                activeOpacity={0.85}
+              >
+                <Text style={styles.buttonText}>
+                  📁 {bulkUploadLoading ? 'Uploading...' : 'Add Bulk Agents'}
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-      {/* Body */}
-      <View style={[styles.modalBody, { alignItems: 'center', gap: 16 }]}>
-        <TouchableOpacity
-          style={[
-            styles.modalButton,
-            styles.button,
-            {
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              width: '100%',
-            },
-          ]}
-          onPress={handleAddAgent}
-          accessibilityLabel="Add single agent"
-          accessibilityRole="button"
-          activeOpacity={0.85}
-        >
-          <Text style={styles.buttonText}>👤 Add Single Agent</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.modalButton,
-            styles.button,
-            {
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              width: '100%',
-            },
-            bulkUploadLoading && styles.buttonDisabled,
-          ]}
-          onPress={handleBulkUpload}
-          disabled={bulkUploadLoading}
-          accessibilityLabel="Add bulk agents"
-          accessibilityRole="button"
-          activeOpacity={0.85}
-        >
-          <Text style={styles.buttonText}>
-            📁 {bulkUploadLoading ? 'Uploading...' : 'Add Bulk Agents'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Footer */}
-      <View style={[styles.modalFooter, { justifyContent: 'center' }]}>
-        <TouchableOpacity
-          style={[
-            styles.cancelButton,
-            {
-              minWidth: 140,
-              justifyContent: 'center',
-              alignItems: 'center',
-              borderColor: '#008080',
-            },
-          ]}
-          onPress={() => setModalState({ type: 'none' })}
-          accessibilityLabel="Cancel modal"
-          accessibilityRole="button"
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.cancelButtonText, { fontSize: 15 }]}>Cancel</Text>
-        </TouchableOpacity>
-      </View>
-    </Animated.View>
-  </View>
-</Modal>
+            {/* Footer */}
+            <View style={[styles.modalFooter, { justifyContent: 'center' }]}>
+              <TouchableOpacity
+                style={[
+                  styles.cancelButton,
+                  {
+                    minWidth: 140,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    borderColor: '#008080',
+                  },
+                ]}
+                onPress={() => setModalState({ type: 'none' })}
+                accessibilityLabel="Cancel modal"
+                accessibilityRole="button"
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.cancelButtonText, { fontSize: 15 }]}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
     );
   }, [modalState, handleAddAgent, handleBulkUpload, bulkUploadLoading, modalFadeAnim]);
 
@@ -590,13 +578,13 @@ const handleBulkUpload = useCallback(async () => {
             isOpen={modalState.type === 'editUser'}
             data={selectedUser}
             onClose={() => setModalState({ type: 'none' })}
-            fetchRecords={handleGetUser}
+            fetchRecords={() => handleGetUser(currentPage, "")}
           />
         )}
         <CreateModal
           isOpen={modalState.type === 'createAgent'}
           onClose={() => setModalState({ type: 'none' })}
-          fetchRecords={handleGetUser}
+          fetchRecords={() => handleGetUser(currentPage,"")}
         />
         {renderAddOptionsModal()}
         {validationModalOpen && validationItem && (
@@ -604,7 +592,7 @@ const handleBulkUpload = useCallback(async () => {
             open={validationModalOpen}
             onClose={() => setValidationModalOpen(false)}
             item={validationItem}
-            handleGetUser={handleGetUser}
+            handleGetUser={() => handleGetUser(currentPage,"")}
           />
         )}
       </SafeAreaView>

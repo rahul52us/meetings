@@ -161,7 +161,7 @@ export default function AgentDashboard() {
     labelData: ['PEOPLE', 'JOBS'],
     graphData: [
       Number(genderCounts?.male || 0) + Number(genderCounts?.female || 0),
-      orderCounts.job,
+      genderCounts.jobs || 0,
     ],
     bgColor: ['#FBB6CE', '#90CDF4'],
     borderW: 1,
@@ -198,7 +198,7 @@ export default function AgentDashboard() {
     },
     {
       title: 'Jobs',
-      count: orderCounts.job,
+      count: genderCounts.jobs || 0,
       description: 'Total Number of Jobs',
       icon: '💼',
       cardBg: '#F3E8FF',
