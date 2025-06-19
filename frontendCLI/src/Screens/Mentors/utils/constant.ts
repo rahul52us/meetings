@@ -17,3 +17,4 @@ export const columns = [
     { key: 'isActive', title: 'Verified', width: COLUMN_WIDTHS.isActive },
     { key: 'actions', title: 'Actions', width: COLUMN_WIDTHS.actions },
 ];
+

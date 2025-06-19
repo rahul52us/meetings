@@ -1,15 +1,15 @@
 export const COLUMN_WIDTHS = {
   profileId: 100,
   name: 160,
-  email: 180,
+  email: 200,
   username: 120,
-  aadharNumber: 180,
-  isActive: 100,
+  aadharNumber: 160,
+  isActive: 180,
   actions: 80,
 };
 
 export const columns = [
-    { key: 'profileId', title: 'Profile Id', width: COLUMN_WIDTHS.profileId },
+    { key: 'profileId', title: 'Seeker Id', width: COLUMN_WIDTHS.profileId },
     { key: 'name', title: 'Name', width: COLUMN_WIDTHS.name },
     { key: 'email', title: 'Email', width: COLUMN_WIDTHS.email },
     { key: 'username', title: 'Mobile No.', width: COLUMN_WIDTHS.username },

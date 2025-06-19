@@ -1,13 +1,37 @@
 // theme.ts
-import {extendTheme, Input} from 'native-base';
+import { extendTheme } from 'native-base';
 
 const customTheme = extendTheme({
+  colors: {
+    teal: {
+      50: '#f0fdfa',
+      100: '#ccfbf1',
+      200: '#99f6e4',
+      300: '#5eead4',
+      400: '#2dd4bf',
+      500: '#14b8a6',
+      600: '#0d9488',
+      700: '#0f766e',
+      800: '#115e59',
+      900: '#134e4a',
+    },
+    coolGray: {
+      50: '#f9fafb',
+      100: '#f3f4f6',
+      200: '#e5e7eb',
+      300: '#d1d5db',
+      400: '#9ca3af',
+      500: '#6b7280',
+      600: '#4b5563',
+      700: '#374151',
+      800: '#1f2937',
+      900: '#111827',
+    },
+  },
   components: {
-    // Customize the components if needed
     Button: {
       baseStyle: {
         rounded: 'md',
-        // height: '50px',
         _text: {
           color: 'white',
         },
@@ -32,7 +56,7 @@ const customTheme = extendTheme({
             bg: 'teal.600',
           },
           _pressed: {
-            bg: 'teal.700',
+            bg: 'teal.600',
           },
         },
         outline: {
@@ -47,9 +71,9 @@ const customTheme = extendTheme({
             },
           },
           _pressed: {
-            borderColor: 'teal.700',
+            borderColor: 'teal.600',
             _text: {
-              color: 'teal.700',
+              color: 'teal.600',
             },
           },
         },
@@ -60,7 +84,6 @@ const customTheme = extendTheme({
         height: '50px',
       },
     },
-    // Add custom styles for other components as needed
   },
 });
 

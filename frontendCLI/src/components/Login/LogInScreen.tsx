@@ -238,7 +238,7 @@ export default function LogInScreen() {
                 isDisabled={!!errors.moNumber || !values.moNumber}
                 borderRadius="lg"
                 bg="teal.600"
-                _pressed={{ bg: 'teal.700' }}
+                _pressed={{ bg: 'teal.600' }}
               >
                 Send OTP
               </Button>
@@ -251,7 +251,6 @@ export default function LogInScreen() {
                   onChange={text => handleChange('otp', text)}
                   error={errors.otp}
                   numDigits={6}
-                  inputSize={12}
                 />
                 {errors.otp && (
                   <FormControl.ErrorMessage>{errors.otp}</FormControl.ErrorMessage>
@@ -263,7 +262,7 @@ export default function LogInScreen() {
                 isDisabled={!!errors.otp || values.otp.length < 6}
                 borderRadius="lg"
                 bg="teal.600"
-                _pressed={{ bg: 'teal.700' }}
+                _pressed={{ bg: 'teal.600' }}
               >
                 Verify OTP
               </Button>
@@ -273,7 +272,7 @@ export default function LogInScreen() {
                     Back
                   </Text>
                 </Pressable>
-                <HStack space={2} alignItems="center">
+                <HStack space={2} alignItems="center" display="none">
                   <Button
                     variant="link"
                     onPress={handleResendOtp}
@@ -317,7 +316,7 @@ const styles = StyleSheet.create({
   },
   noDataImage: {
     width: 200,
-    height: 200,
+    height: 100,
     marginTop: -100,
   },
 });

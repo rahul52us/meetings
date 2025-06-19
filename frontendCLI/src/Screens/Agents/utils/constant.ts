@@ -3,7 +3,7 @@ export const COLUMN_WIDTHS = {
   name: 160,
   email: 180,
   username: 120,
-  aadharNumber: 120,
+  aadharNumber: 180,
   agentType: 120,
   isActive: 100,
   actions: 80,

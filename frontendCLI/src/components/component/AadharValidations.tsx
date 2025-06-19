@@ -170,14 +170,6 @@ const AadharValidationComponent: React.FC<Props> = ({ open, onClose, item, handl
         >
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Aadhaar Validation</Text>
-            <Pressable
-              onPress={loading ? undefined : onClose}
-              accessibilityLabel="Close Aadhaar validation modal"
-              accessibilityRole="button"
-              disabled={loading}
-            >
-              <Text style={styles.modalClose}>X</Text>
-            </Pressable>
           </View>
           <View style={styles.modalBody}>
             <View style={styles.aadharContainer}>

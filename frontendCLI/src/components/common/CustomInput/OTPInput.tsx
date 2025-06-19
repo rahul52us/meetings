@@ -1,15 +1,13 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { HStack, Input } from 'native-base';
-import { TextInput, Animated, Easing, Keyboard } from 'react-native';
+import { Box, Input, Text, Pressable } from 'native-base';
+import { TextInput } from 'react-native';
 
 type OTPInputProps = {
   value: string;
   onChange: (text: string) => void;
   error?: string;
   numDigits?: number;
-  inputSize?: number;
   borderColor?: string;
-  focusBorderColor?: string;
   bgColor?: string;
   autoSubmit?: boolean;
   onSubmit?: () => void;
@@ -20,103 +18,86 @@ const OTPInput: React.FC<OTPInputProps> = ({
   onChange,
   error,
   numDigits = 6,
-  inputSize = 12,
   borderColor = 'gray.300',
-  focusBorderColor = 'teal.600',
   bgColor = 'white',
   autoSubmit = false,
   onSubmit,
 }) => {
-  const inputs = useRef<Array<TextInput | null>>([]);
-  const [shakeAnim] = useState(new Animated.Value(0));
+  const inputRef = useRef<TextInput | null>(null);
+  const [isFocused, setIsFocused] = useState(false);
 
-  const normalizedValue = value.padEnd(numDigits, ' ').slice(0, numDigits);
-
-  const handleChange = (text: string, index: number) => {
-    if (/^\d?$/.test(text)) {
-      const updated = normalizedValue.split('');
-      updated[index] = text;
-      const joinedValue = updated.join('').trim();
-      onChange(joinedValue);
-
-      if (text) {
-        if (index < numDigits - 1) {
-          inputs.current[index + 1]?.focus();
-        } else {
-          inputs.current[index]?.blur();
-          Keyboard.dismiss();
-          if (autoSubmit && joinedValue.length === numDigits && onSubmit) {
-            onSubmit();
-          }
-        }
+  const handleChange = (text: string) => {
+    if (/^\d*$/.test(text) && text.length <= numDigits) {
+      onChange(text);
+      if (autoSubmit && text.length === numDigits && onSubmit) {
+        onSubmit();
+        inputRef.current?.blur();
       }
     }
   };
 
-  const handleKeyPress = (e: any, index: number) => {
-    if (e.nativeEvent.key === 'Backspace' && !normalizedValue[index] && index > 0) {
-      inputs.current[index - 1]?.focus();
-    }
-  };
-
   useEffect(() => {
-    if (error) {
-      Animated.sequence([
-        Animated.timing(shakeAnim, {
-          toValue: 10,
-          duration: 50,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        }),
-        Animated.timing(shakeAnim, {
-          toValue: -10,
-          duration: 50,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        }),
-        Animated.timing(shakeAnim, {
-          toValue: 0,
-          duration: 50,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [error]);
-
-  useEffect(() => {
-    inputs.current[0]?.focus();
+    inputRef.current?.focus();
+    setIsFocused(true);
   }, []);
 
+  useEffect(() => {
+    if (!value) {
+      inputRef.current?.focus();
+      setIsFocused(true);
+    }
+  }, [value]);
+
   return (
-    <Animated.View style={{ transform: [{ translateX: shakeAnim }] }}>
-      <HStack space={2} justifyContent="center">
-        {Array.from({ length: numDigits }).map((_, index) => (
-          <Input
-            key={index}
-            ref={(ref) => (inputs.current[index] = ref)}
-            value={normalizedValue[index] === ' ' ? '' : normalizedValue[index]}
-            onChangeText={(text) => handleChange(text, index)}
-            onKeyPress={(e) => handleKeyPress(e, index)}
-            keyboardType="numeric"
-            maxLength={1}
-            textAlign="center"
-            w={`${inputSize}`}
-            h={`${inputSize}`}
-            fontSize="lg"
-            borderColor={error ? 'red.500' : borderColor}
-            borderWidth={2}
-            borderRadius="md"
-            bg={bgColor}
-            _focus={{
-              borderColor: error ? 'red.500' : focusBorderColor,
-              bg: bgColor,
-            }}
-            accessibilityLabel={`OTP Digit ${index + 1}`}
-          />
-        ))}
-      </HStack>
-    </Animated.View>
+    <Box alignItems="center" w="full" px={4} py={6}>
+      <Text fontSize="md" mb={2} color="gray.700">
+      Enter the code we sent via SMS      </Text>
+
+      <Input
+        ref={(ref) => (inputRef.current = ref)}
+        value={value}
+        onChangeText={handleChange}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+        keyboardType="numeric"
+        maxLength={numDigits}
+        textAlign="center"
+        w="80%"
+        h={12}
+        fontSize="xl"
+        borderColor={error ? 'red.500' : isFocused ? 'teal.500' : borderColor}
+        borderWidth={1.5}
+        borderRadius="lg"
+        bg={isFocused ? 'gray.50' : bgColor}
+        autoCapitalize="none"
+        autoCorrect={false}
+        placeholder={`Enter ${numDigits}-digit OTP`}
+        _focus={{
+          borderColor: 'teal.500',
+          bg: 'gray.50',
+        }}
+      />
+
+      {error && (
+        <Text fontSize="sm" color="red.500" mt={2} textAlign="center">
+          {error}
+        </Text>
+      )}
+
+      <Pressable
+        mt={3}
+        onPress={() => {
+          onChange('');
+          inputRef.current?.focus();
+          setIsFocused(true);
+        }}
+        _pressed={{ opacity: 0.6 }}
+      >
+        <Text fontSize="sm" color="teal.600" underline>
+          Clear OTP
+        </Text>
+      </Pressable>
+    </Box>
   );
 };
 

@@ -15,6 +15,15 @@ export const maskAadhaar = (aadhar?: string): string => {
   };
 
 
+  export const getShortName = (filename?: string | null, maxLength = 20): string => {
+    if (!filename || typeof filename !== 'string' || filename.trim() === '') {
+      return 'N/A';
+    }
+    if (filename.length <= maxLength) return filename;
+    return `${filename.slice(0, 10)}...${filename.slice(-10)}`;
+  };
+
+
   export const getOptionsFromMasterData = (key:string, masterData:any) => {
     if (!masterData || !masterData[key]) return [];
 
