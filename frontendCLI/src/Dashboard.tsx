@@ -168,20 +168,6 @@ export default function AgentDashboard() {
     borderColor: '#fff',
   };
 
-  const dummyTableData: TableData[] = [
-    {
-      id: 1,
-      status: 'People',
-      name: 'John Doe',
-      applied: Number(genderCounts?.male || 0) + Number(genderCounts?.female || 0),
-    },
-    {
-      id: 2,
-      status: 'Jobs',
-      name: 'Jane Doe',
-      applied: orderCounts.job,
-    },
-  ];
 
   let totalCount = 0;
   if (Object.keys(genderCounts).length > 0) {

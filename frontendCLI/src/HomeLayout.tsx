@@ -8,8 +8,9 @@ import Mentors from './Screens/Mentors/Mentors';
 import JobSeekers from './Screens/JobSeekers/JobSeekers';
 import Agents from './Screens/Agents/Agents';
 import JobList from './Screens/JobLists/JobLists';
+import ProfileIndex from './Screens/Profile/ProfileIndex';
 
-type ScreenKey = 'Dashboard' | 'Employers' | 'Mentors' | 'Agents' | 'JobSeekers'  | 'JobLists';
+type ScreenKey = 'Dashboard' | 'Profile' | 'Employers' | 'Mentors' | 'Agents' | 'JobSeekers'  | 'JobLists';
 
 const HomeLayout = () => {
   const [currentScreen, setCurrentScreen] = useState<ScreenKey>('Dashboard');
@@ -19,6 +20,8 @@ const HomeLayout = () => {
     switch (currentScreen) {
       case 'Dashboard':
         return <Dashboard />;
+      case 'Profile':
+          return <ProfileIndex />;
       case 'Employers':
         return <Employers />;
         case 'JobLists':

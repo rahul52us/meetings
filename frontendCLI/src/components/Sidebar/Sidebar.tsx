@@ -20,56 +20,49 @@ import BackIcon from '../../assets/icons/BackIcon';
 import { BaseScreens, BaseStackNavigationProp } from '../../navigations/BaseStack';
 import { useUser } from '../authGuard/UserContext';
 
-type MenuItem = {
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-};
-
 type SidebarProps = {
   visible: boolean;
   onClose: () => void;
-  setCurrentScreen?: any;
+  setCurrentScreen?:any;
 };
 
 const Sidebar = ({ visible, onClose, setCurrentScreen }: SidebarProps) => {
   const { accountDetails } = useUser();
-  const { reset } = useNavigation<BaseStackNavigationProp>();
+  const navigation = useNavigation<BaseStackNavigationProp>();
   const slideAnim = useRef(new Animated.Value(-320)).current;
   const [selectedItem, setSelectedItem] = useState('Dashboard');
 
-  const logout = () => {
-    AsyncStorage.removeItem('auth-token')
-      .then(() => {
-        reset({
-          index: 0,
-          routes: [{ name: BaseScreens.UnAuthStack }],
-        });
-      })
-      .catch(err => {
-        console.error('Error clearing auth token:', err);
+  const logout = async () => {
+    try {
+      await AsyncStorage.removeItem('auth-token');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: BaseScreens.UnAuthStack }],
       });
+    } catch (err) {
+      console.error('Logout Error:', err);
+    }
   };
 
-  const slideIn = () => {
+  const handleSlide = (toValue: number, onComplete?: () => void) => {
     Animated.timing(slideAnim, {
-      toValue: 0,
+      toValue,
       duration: 300,
       useNativeDriver: true,
-    }).start();
-  };
-
-  const slideOut = () => {
-    Animated.timing(slideAnim, {
-      toValue: -320,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => onClose());
+    }).start(() => onComplete?.());
   };
 
   useEffect(() => {
-    visible ? slideIn() : slideOut();
+    visible ? handleSlide(0) : handleSlide(-320);
   }, [visible]);
+
+  const closeAndNavigate = (screen: string) => {
+    handleSlide(-320, () => {
+      setCurrentScreen?.(screen);
+      setSelectedItem(screen);
+      onClose();
+    });
+  };
 
   const sidebarStyle: ViewStyle = {
     transform: [{ translateX: slideAnim }],
@@ -79,62 +72,14 @@ const Sidebar = ({ visible, onClose, setCurrentScreen }: SidebarProps) => {
     zIndex: 1000,
   };
 
-  const menuItems: MenuItem[] = [
-    {
-      label: 'Dashboard',
-      onPress: () => {
-        setCurrentScreen?.('Dashboard');
-        setSelectedItem('Dashboard');
-        slideOut();
-      },
-    },
-    {
-      label: 'Job Seekers',
-      onPress: () => {
-        setCurrentScreen?.('JobSeekers');
-        setSelectedItem('Job Seekers');
-        slideOut();
-      },
-    },
-    {
-      label: 'Mentors',
-      onPress: () => {
-        setCurrentScreen?.('Mentors');
-        setSelectedItem('Mentors');
-        slideOut();
-      },
-    },
-    {
-      label: 'Employers',
-      onPress: () => {
-        setCurrentScreen?.('Employers');
-        setSelectedItem('Employers');
-        slideOut();
-      },
-    },
-    {
-      label: 'Job List',
-      onPress: () => {
-        setCurrentScreen?.('JobLists');
-        setSelectedItem('Job List');
-        slideOut();
-      },
-    },
-    {
-      label: 'Agents',
-      onPress: () => {
-        setCurrentScreen?.('Agents');
-        setSelectedItem('Agents');
-        slideOut();
-      },
-    },
-    {
-      label: 'Logout',
-      onPress: () => {
-        logout();
-        slideOut();
-      },
-    },
+  const menuItems = [
+    { label: 'Dashboard', screen: 'Dashboard' },
+    { label: 'Job Seekers', screen: 'JobSeekers' },
+    { label: 'Mentors', screen: 'Mentors' },
+    { label: 'Employers', screen: 'Employers' },
+    { label: 'Job List', screen: 'JobLists' },
+    { label: 'Agents', screen: 'Agents' },
+    { label: 'Logout', screen: 'Logout' },
   ];
 
   return (
@@ -147,7 +92,7 @@ const Sidebar = ({ visible, onClose, setCurrentScreen }: SidebarProps) => {
             left={0}
             right={0}
             bottom={0}
-            bg="rgba(0,0,0,0.5)"
+            bg="rgba(0,0,0,0.4)"
             zIndex={999}
           />
         </TouchableWithoutFeedback>
@@ -162,93 +107,99 @@ const Sidebar = ({ visible, onClose, setCurrentScreen }: SidebarProps) => {
           borderRightRadius="3xl"
           shadow={9}
         >
-          {/* Close Button */}
           <Button
             variant="ghost"
-            onPress={slideOut}
+            onPress={() => handleSlide(-320, onClose)}
             size="sm"
             position="absolute"
             top={3}
             left={3}
-            _pressed={{ bg: 'gray.100' }}
+            _pressed={{ bg: 'teal.200' }}
             zIndex={1}
           >
             <BackIcon size={22} />
           </Button>
 
           {/* Profile Section */}
-          <VStack space={2} alignItems="center" mb={6}>
-            <Avatar
-              source={{
-                uri:
-                  accountDetails?.profileDetails?.profileDetails?.avatar ||
-                  'https://www.pngall.com/wp-content/uploads/12/Avatar-Profile-PNG-Photos.png',
-              }}
-              size="xl"
-              borderColor="primary.500"
-              borderWidth={1}
-              mb={1}
-              shadow={2}
-            />
-            <Text fontSize="lg" fontWeight="bold" color="coolGray.800">
-              {accountDetails?.name || 'Unknown'}
-            </Text>
-            <Text fontSize="xs" color="gray.500">
-              {accountDetails?.username || 'user'}
-            </Text>
-            <Box px={3} py={1} bg="primary.100" borderRadius="full" mt={1}>
-              <Text fontSize="xs" color="teal.700" fontWeight="bold">
-                {accountDetails?.role?.toUpperCase() || 'USER'}
+          <Pressable
+            onPress={() => closeAndNavigate('Profile')}
+            _pressed={{ opacity: 0.85 }}
+          >
+            <VStack space={2} alignItems="center" mb={6}>
+              <Avatar
+                source={{
+                  uri:
+                    accountDetails?.profileDetails?.profileDetails?.avatar ||
+                    'https://www.pngall.com/wp-content/uploads/12/Avatar-Profile-PNG-Photos.png',
+                }}
+                size="xl"
+                borderColor="teal.500"
+                borderWidth={2}
+                shadow={4}
+              />
+              <Text fontSize="lg" fontWeight="bold" color="teal.900">
+                {accountDetails?.name || 'Unknown'}
               </Text>
-            </Box>
-          </VStack>
+              <Text fontSize="xs" color="teal.600">
+                {accountDetails?.username || 'user'}
+              </Text>
+              <Box px={3} py={1} bg="teal.200" borderRadius="full" mt={1}>
+                <Text fontSize="xs" color="teal.800" fontWeight="bold">
+                  {accountDetails?.role?.toUpperCase() || 'USER'}
+                </Text>
+              </Box>
+            </VStack>
+          </Pressable>
 
-          <Divider mb={5} />
+          <Divider mb={5} bg="teal.300" />
 
-          {/* Menu Items (Improved) */}
-          <VStack space={1}>
-            {menuItems.map((item, index) => {
-              const isSelected = selectedItem === item.label;
+          {/* Menu Items */}
+          <VStack space={2}>
+            {menuItems.map(({ label, screen }) => {
+              const isSelected = selectedItem === screen;
+              const isLogout = screen === 'Logout';
+
               return (
                 <Pressable
-                  key={index}
-                  onPress={item.onPress}
-                  isDisabled={item.disabled}
-                  _pressed={{ bg: 'primary.100' }}
+                  key={screen}
+                  onPress={() => {
+                    if (isLogout) {
+                      logout();
+                      handleSlide(-320, onClose);
+                    } else {
+                      closeAndNavigate(screen);
+                    }
+                  }}
+                  _pressed={{ bg: 'teal.100' }}
                 >
-                  {({ isPressed }) => (
-                    <Box
-                      flexDir="row"
-                      alignItems="center"
-                      px={4}
-                      py={3}
-                      borderRadius="2xl"
-                      bg={
-                        isSelected
-                          ? 'teal.200'
-                          : isPressed
-                          ? 'gray.100'
-                          : 'gray.50'
-                      }
-                      shadow={isSelected ? 2 : 0}
-                    >
-                      {/* Active dot or icon placeholder */}
-                      <Box
-                        bg={isSelected ? 'teal.500' : 'gray.300'}
-                        borderRadius="full"
-                        size={2}
-                        mr={3}
-                      />
+                  {({ isPressed }) => {
+                    const bgColor = isSelected
+                      ? 'teal.600'
+                      : isPressed
+                      ? 'teal.100'
+                      : 'transparent';
 
-                      <Text
-                        fontSize="md"
-                        fontWeight={isSelected ? 'bold' : 'normal'}
-                        color={isSelected ? 'teal.800' : 'coolGray.800'}
+                    const textColor = isSelected ? 'white' : 'teal.800';
+
+                    return (
+                      <Box
+                        px={4}
+                        py={3}
+                        borderRadius="full"
+                        bg={bgColor}
+                        shadow={isSelected ? 2 : 0}
                       >
-                        {item.label}
-                      </Text>
-                    </Box>
-                  )}
+                        <Text
+                          fontSize="md"
+                          fontWeight={isSelected ? 'bold' : 'normal'}
+                          color={textColor}
+                          textAlign="center"
+                        >
+                          {label}
+                        </Text>
+                      </Box>
+                    );
+                  }}
                 </Pressable>
               );
             })}
@@ -256,7 +207,7 @@ const Sidebar = ({ visible, onClose, setCurrentScreen }: SidebarProps) => {
 
           {/* Footer */}
           <Box flex={1} justifyContent="flex-end" pb={5} alignItems="center">
-            <Text fontSize="xs" color="gray.400">
+            <Text fontSize="xs" color="teal.600">
               © 2025 BusinessSahayata
             </Text>
           </Box>

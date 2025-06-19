@@ -1,5 +1,6 @@
 export type RootStackParamList = {
   Dashboard:any;
+  Profile:any;
   DocumentList: {
     folder: any;
   };
