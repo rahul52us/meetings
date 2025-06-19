@@ -1,1203 +1,896 @@
-import React, { useEffect, useState, useContext, useRef, useCallback, memo, useMemo } from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   View,
   Text,
   Pressable,
+  TextInput,
   StyleSheet,
   FlatList,
-  Dimensions,
-  Animated,
-  Modal,
-  TextInput,
-  Platform,
-  Alert,
-  TouchableOpacity,
   ScrollView,
-  ViewStyle,
   ActivityIndicator,
+  Platform,
+  Dimensions,
+  RefreshControl,
+  Animated,
+  TouchableOpacity,
+  Modal,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { appRequest } from '../../routes'; // Assumed API request function
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {appRequest} from '../../routes';
+import DocumentPicker from 'react-native-document-picker';
+import RNFS from 'react-native-fs';
+import {useUser} from '../../components/authGuard/UserContext';
+import {PaginationLimit} from '../../utils/constant';
+import {COLUMN_WIDTHS, columns} from './utils/constant';
+import ViewModal from './component/ViewModal';
+import EditModal from './component/EditModal';
+import CreateModal from './component/CreateModal';
 
-// Mock PassportValidationComponent (replace with actual import)
-const PassportValidationComponent = ({ open, onClose, item, handleGetUser }: {
-  open: boolean;
-  onClose: () => void;
-  item: Job;
-  handleGetUser: (isTabSwitch?: boolean) => Promise<void>;
-}) => {
-  if (!open) return null;
-  return (
-    <Modal visible={open} transparent animationType="fade">
-      <View style={styles.modalContainer}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Validate Passport for {item.jobDetails?.jobTitle}</Text>
+class ErrorBoundary extends React.Component<
+  {children: React.ReactNode},
+  {hasError: boolean}
+> {
+  state = {hasError: false};
+  static getDerivedStateFromError() {
+    return {hasError: true};
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>
+            Something went wrong. Please try again.
+          </Text>
           <Pressable
-            style={styles.modalButton}
-            onPress={async () => {
-              await handleGetUser();
-              onClose();
-            }}
-          >
-            <Text style={styles.modalButtonText}>Validate (Mock)</Text>
-          </Pressable>
-          <Pressable style={styles.modalButton} onPress={onClose}>
-            <Text style={styles.modalButtonText}>Close</Text>
+            style={styles.retryButton}
+            onPress={() => this.setState({hasError: false})}
+            accessibilityLabel="Retry loading component"
+            accessibilityRole="button">
+            <Text style={styles.buttonText}>Retry</Text>
           </Pressable>
         </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const AgentIndex: React.FC = () => {
+  const {toastNotify} = useUser();
+  const [modalState, setModalState] = useState<any>({type: 'none'});
+  const [loading, setLoading] = useState({hyper_local: false, abroad: false});
+  const [initialLoad, setInitialLoad] = useState({
+    hyper_local: true,
+    abroad: true,
+  });
+  const [search, setSearch] = useState({hyper_local: '', abroad: ''});
+  const [currentPage, setCurrentPage] = useState({hyper_local: 1, abroad: 1});
+  const [totalPages, setTotalPages] = useState({hyper_local: 1, abroad: 1});
+  const [data, setData] = useState<{hyper_local: any[]; abroad: any[]}>({
+    hyper_local: [],
+    abroad: [],
+  });
+  const [refreshing, setRefreshing] = useState({
+    hyper_local: false,
+    abroad: false,
+  });
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [rowHighlight, setRowHighlight] = useState<string | null>(null);
+  const [bulkUploadLoading, setBulkUploadLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'hyper_local' | 'abroad'>(
+    'hyper_local',
+  );
+  const modalFadeAnim = useState(new Animated.Value(0))[0];
+
+  useEffect(() => {
+    if (modalState.type === 'addOptions') {
+      Animated.timing(modalFadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(modalFadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [modalState.type, modalFadeAnim]);
+
+  // Debounce utility for search
+  const debounce = useCallback((func: Function, delay: number) => {
+    let timeoutId: NodeJS.Timeout;
+    return (...args: any[]) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => func(...args), delay);
+    };
+  }, []);
+
+const handleGetUser = useCallback(
+    async (page: number, value: string, tab: 'hyper_local' | 'abroad') => {
+      try {
+        setLoading(prev => ({...prev, [tab]: true}));
+        const response: any = await appRequest('hyperJob', 'getHyperJobData', {
+          page: currentPage,
+          limit: PaginationLimit,
+          type: tab,
+          search: value,
+        });
+        if (response.status === 'success' && Array.isArray(response.data)) {
+          setData(prev => ({...prev, [tab]: response.data}));
+          setTotalPages(prev => ({...prev, [tab]: response.totalPages || 1}));
+        } else {
+          setData(prev => ({...prev, [tab]: []}));
+          toastNotify({
+            status: 'error',
+            title: response.message || `Failed to fetch ${tab} agents`,
+          });
+        }
+      } catch (error: any) {
+        console.error(`Get ${tab} Agents Error:`, error);
+        toastNotify({
+          status: 'error',
+          title: error.message || `Failed to fetch ${tab} agents`,
+        });
+      } finally {
+        setLoading(prev => ({...prev, [tab]: false}));
+        setRefreshing(prev => ({...prev, [tab]: false}));
+      }
+    },
+    [toastNotify],
+  );
+
+  const debouncedSearch = useMemo(
+    () => ({
+      hyper_local: debounce((value: string) => {
+        setCurrentPage(prev => ({...prev, hyper_local: 1}));
+        handleGetUser(1, value, 'hyper_local');
+      }, 1000),
+      abroad: debounce((value: string) => {
+        setCurrentPage(prev => ({...prev, abroad: 1}));
+        handleGetUser(1, value, 'abroad');
+      }, 1000),
+    }),
+    [debounce, handleGetUser],
+  );
+
+  useEffect(() => {
+    if (initialLoad[activeTab]) {
+      handleGetUser(1, search[activeTab], activeTab);
+    }
+  }, [activeTab, initialLoad, handleGetUser, search]);
+
+  useEffect(() => {
+    if (!initialLoad[activeTab]) {
+      debouncedSearch[activeTab](search[activeTab]);
+    }
+  }, [search, activeTab, debouncedSearch, initialLoad]);
+
+  const handleTabChange = useCallback(
+    (tab: 'hyper_local' | 'abroad') => {
+      setActiveTab(tab);
+      setCurrentPage(prev => ({...prev, [tab]: 1}));
+      if (initialLoad[tab]) {
+        setInitialLoad(prev => ({...prev, [tab]: false}));
+      }
+    },
+    [initialLoad],
+  );
+
+  // Change page
+  const handlePageChange = useCallback(
+    (page: number, tab: 'hyper_local' | 'abroad') => {
+      if (page >= 1 && page <= totalPages[tab]) {
+        setCurrentPage(prev => ({...prev, [tab]: page}));
+        handleGetUser(page, search[tab], tab);
+      }
+    },
+    [totalPages, handleGetUser, search],
+  );
+
+  const handleBulkUpload = useCallback(async () => {
+    try {
+      setBulkUploadLoading(true);
+      const result = await DocumentPicker.pick({
+        type: [DocumentPicker.types.xlsx, DocumentPicker.types.xls],
+      });
+
+      if (!result || !Array.isArray(result) || result.length === 0) {
+        toastNotify({status: 'error', title: 'No file selected'});
+        return;
+      }
+
+      const file = result[0];
+      if (!file.uri || !file.name) {
+        toastNotify({status: 'error', title: 'Invalid file selected'});
+        return;
+      }
+
+      if (!file.name.match(/\.(xlsx|xls)$/i)) {
+        toastNotify({
+          status: 'error',
+          title: 'Please select an Excel file (.xlsx or .xls)',
+        });
+        return;
+      }
+
+      const base64 = await RNFS.readFile(file.uri, 'base64');
+      const binary = atob(base64);
+      const byteArray = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        byteArray[i] = binary.charCodeAt(i);
+      }
+
+      const payload = [
+        {file: JSON.stringify(Array.from(byteArray)), agentType: activeTab},
+      ];
+      const response: any = await appRequest('job', 'createExcel', payload);
+
+      if (response.status === 'success' && response.data) {
+        setData(prev => ({...prev, [activeTab]: response.data}));
+        toastNotify({status: 'success', title: 'Uploaded Successfully'});
+        handleGetUser(1, search[activeTab], activeTab);
+        setModalState({type: 'none'});
+      } else {
+        toastNotify({
+          status: 'error',
+          title: response.message || 'Upload Failed',
+        });
+      }
+    } catch (error: any) {
+      console.error('Bulk Upload Error:', error);
+      if (DocumentPicker.isCancel(error)) {
+        toastNotify({status: 'error', title: 'File selection cancelled'});
+      } else {
+        toastNotify({status: 'error', title: error.message || 'Upload Failed'});
+      }
+    } finally {
+      setBulkUploadLoading(false);
+    }
+  }, [toastNotify, handleGetUser, search, activeTab]);
+
+  // Open create job modal
+  const handleAddData = useCallback(() => {
+    setModalState({type: 'createJob', data: {agentType: activeTab}});
+  }, [activeTab]);
+
+  const handleEditData = useCallback((user: any) => {
+    setSelectedUser(user);
+    setModalState({type: 'editJob', data: user});
+  }, []);
+
+  const handleSearch = useCallback(
+    (value: string, tab: 'hyper_local' | 'abroad') => {
+      setSearch(prev => ({...prev, [tab]: value}));
+    },
+    [],
+  );
+
+  const handleClearSearch = useCallback(
+    (tab: 'hyper_local' | 'abroad') => {
+      setSearch(prev => ({...prev, [tab]: ''}));
+      setCurrentPage(prev => ({...prev, [tab]: 1}));
+      handleGetUser(1, '', tab);
+    },
+    [handleGetUser],
+  );
+
+  // Refresh data
+  const handleRefresh = useCallback(
+    (tab: 'hyper_local' | 'abroad') => {
+      setRefreshing(prev => ({...prev, [tab]: true}));
+      setSearch(prev => ({...prev, [tab]: ''}));
+      setCurrentPage(prev => ({...prev, [tab]: 1}));
+      handleGetUser(1, '', tab);
+    },
+    [handleGetUser],
+  );
+
+  // Calculate total table width
+  const totalTableWidth = columns.reduce(
+    (sum: number, col: {width: number}) => sum + col.width,
+    0,
+  );
+
+  // Render table header
+  const renderTableHeader = useCallback(
+    () => (
+      <View style={[styles.tableHeader, {minWidth: totalTableWidth}]}>
+        {columns.map((column: {key: string; title: string; width: number}) => (
+          <View
+            key={column.key}
+            style={[styles.tableHeaderCell, {width: column.width}]}>
+            <Text
+              style={styles.tableHeaderText}
+              numberOfLines={1}
+              ellipsizeMode="tail">
+              {column.title}
+            </Text>
+          </View>
+        ))}
       </View>
-    </Modal>
+    ),
+    [totalTableWidth],
   );
-};
 
-// Interfaces
-interface ApiResponse {
-  status: string;
-  data?: Job[];
-  totalPages?: number;
-  message?: string;
-}
-
-interface FileObject {
-  name: string;
-  size: number;
-  type: string;
-  content: { [key: number]: number };
-  url: string;
-}
-
-interface Job {
-  _id?: string;
-  jobDetails?: {
-    jobType?: string;
-    jobTitle?: string;
-    jobCategory?: string;
-    experience?: string;
-    passportNumber?: string;
-    location?: string;
-    salary?: string;
-    isVerified?: boolean; // Added for passport validation
-  };
-  jobScope?: string;
-  employerName?: { name?: string };
-  agentName?: { name?: string };
-  createdBy?: { name?: string };
-}
-
-interface AppContextType {
-  toastNotify: (params: { title: string; message: string; type: string }) => void;
-}
-
-interface ModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  jobScope?: string;
-  getHyperJobData?: () => void;
-  jobDetails?: Job | null;
-  job?: Job | null;
-  setEditJobDetails?: (job: Job | null) => void;
-  getUserData?: () => void;
-}
-
-// App Context
-const AppContext = React.createContext<AppContextType>({
-  toastNotify: ({ title, message }) => Alert.alert(title, message),
-});
-
-const screenWidth = Dimensions.get('window').width;
-const screenHeight = Dimensions.get('window').height;
-
-// Utility Functions
-const maskAadhaar = (number: string | undefined): string =>
-  number ? `****${number?.slice(-4)}` : 'NA';
-
-const formatJobScope = (scope: string): string => {
-  if (scope === 'hyper_local') return 'Hyper Local';
-  if (scope === 'abroad') return 'Abroad';
-  return 'NA';
-};
-
-// Custom Loader Component
-const CustomLoader = () => {
-  const scaleAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 0.8,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, [scaleAnim]);
-
-  return (
-    <View style={[styles.loaderOverlay, { height: screenHeight * 0.6 }]}>
-      <Animated.View style={[styles.loaderContainer, { transform: [{ scale: scaleAnim }] }]}>
-        <Text style={styles.loaderIcon}>⏳</Text>
-      </Animated.View>
-      <Text style={styles.loaderText}>Loading Jobs...</Text>
-    </View>
-  );
-};
-
-// Modal Components
-const AddJobDrawer: React.FC<ModalProps> = ({ isOpen, onClose, jobScope, getHyperJobData }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const [jobTitle, setJobTitle] = useState('');
-  const [salary, setSalary] = useState('');
-
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: isOpen ? 1 : 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-  }, [isOpen]);
-
-  const handleSave = async () => {
-    if (!jobTitle || !salary) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-    try {
-      const response: any = await appRequest('hyperJob', 'createHyperJob', {
-        jobDetails: { jobTitle, salary },
-        jobScope,
-      });
-      if (response.status === 'success') {
-        getHyperJobData?.();
-        setJobTitle('');
-        setSalary('');
-        onClose();
-      } else {
-        Alert.alert('Error', response.message ?? 'Failed to add job');
-      }
-    } catch (err: unknown) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to add job');
-    }
-  };
-
-  return (
-    <Modal visible={isOpen} animationType="none" transparent>
-      <Animated.View style={[styles.modalContainer, { opacity: fadeAnim }]}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Add Job ({formatJobScope(jobScope ?? '')})</Text>
-            <Pressable onPress={onClose} accessibilityLabel="Close modal">
-              <Text style={styles.modalCloseIcon}>✖️</Text>
-            </Pressable>
-          </View>
-          <TextInput
-            style={styles.modalInput}
-            placeholder="Job Title"
-            value={jobTitle}
-            onChangeText={setJobTitle}
-            accessibilityLabel="Job Title"
-          />
-          <TextInput
-            style={styles.modalInput}
-            placeholder="Salary (₹)"
-            value={salary}
-            onChangeText={setSalary}
-            keyboardType="numeric"
-            accessibilityLabel="Salary"
-          />
-          <Pressable style={styles.modalButton} onPress={handleSave} accessibilityLabel="Save job">
-            <Text style={styles.modalButtonText}>Save</Text>
-          </Pressable>
-        </View>
-      </Animated.View>
-    </Modal>
-  );
-};
-
-const JobDetails: React.FC<ModalProps> = ({ isOpen, onClose, jobDetails }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: isOpen ? 1 : 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-  }, [isOpen]);
-
-  if (!jobDetails) return null;
-
-  return (
-    <Modal visible={isOpen} animationType="none" transparent>
-      <Animated.View style={[styles.modalContainer, { opacity: fadeAnim }]}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Job Details</Text>
-            <Pressable onPress={onClose} accessibilityLabel="Close modal">
-              <Text style={styles.modalCloseIcon}>✖️</Text>
-            </Pressable>
-          </View>
-          <ScrollView style={styles.modalBody}>
-            <Text style={styles.modalText}>Title: {jobDetails.jobDetails?.jobTitle ?? 'NA'}</Text>
-            <Text style={styles.modalText}>Type: {jobDetails.jobDetails?.jobType ?? 'NA'}</Text>
-            <Text style={styles.modalText}>Scope: {formatJobScope(jobDetails.jobScope ?? 'NA')}</Text>
-            <Text style={styles.modalText}>Employer: {jobDetails.employerName?.name ?? 'NA'}</Text>
-            <Text style={styles.modalText}>Agent: {jobDetails.agentName?.name ?? 'NA'}</Text>
-            <Text style={styles.modalText}>Category: {jobDetails.jobDetails?.jobCategory ?? 'NA'}</Text>
-            <Text style={styles.modalText}>Experience: {jobDetails.jobDetails?.experience ?? 'NA'}</Text>
-            {jobDetails.jobScope === 'abroad' && (
-              <Text style={styles.modalText}>Passport: {maskAadhaar(jobDetails.jobDetails?.passportNumber)}</Text>
-            )}
-            <Text style={styles.modalText}>Location: {jobDetails.jobDetails?.location ?? 'NA'}</Text>
-            <Text style={styles.modalText}>Salary: ₹ {jobDetails.jobDetails?.salary ?? 'NA'}</Text>
-            <Text style={styles.modalText}>Created By: {jobDetails.createdBy?.name ?? 'NA'}</Text>
-          </ScrollView>
-        </View>
-      </Animated.View>
-    </Modal>
-  );
-};
-
-const JobEditDrawer: React.FC<ModalProps> = ({ isOpen, onClose, job, setEditJobDetails, getUserData }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const [jobTitle, setJobTitle] = useState(job?.jobDetails?.jobTitle ?? '');
-  const [salary, setSalary] = useState(job?.jobDetails?.salary ?? '');
-
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: isOpen ? 1 : 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-  }, [isOpen]);
-
-  useEffect(() => {
-    setJobTitle(job?.jobDetails?.jobTitle ?? '');
-    setSalary(job?.jobDetails?.salary ?? '');
-  }, [job]);
-
-  const handleSave = async () => {
-    if (!jobTitle || !salary) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-    try {
-      const response: any = await appRequest('hyperJob', 'updateHyperJob', {
-        id: job?._id,
-        jobDetails: { jobTitle, salary },
-      });
-      if (response.status === 'success') {
-        getUserData?.();
-        setEditJobDetails?.({ ...job, jobDetails: { ...job?.jobDetails, jobTitle, salary } });
-        onClose();
-      } else {
-        Alert.alert('Error', response.message ?? 'Failed to update job');
-      }
-    } catch (err: unknown) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to update job');
-    }
-  };
-
-  if (!job) return null;
-
-  return (
-    <Modal visible={isOpen} animationType="none" transparent>
-      <Animated.View style={[styles.modalContainer, { opacity: fadeAnim }]}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Edit Job</Text>
-            <Pressable onPress={onClose} accessibilityLabel="Close modal">
-              <Text style={styles.modalCloseIcon}>✖️</Text>
-            </Pressable>
-          </View>
-          <TextInput
-            style={styles.modalInput}
-            placeholder="Job Title"
-            value={jobTitle}
-            onChangeText={setJobTitle}
-            accessibilityLabel="Job Title"
-          />
-          <TextInput
-            style={styles.modalInput}
-            placeholder="Salary (₹)"
-            value={salary}
-            onChangeText={setSalary}
-            keyboardType="numeric"
-            accessibilityLabel="Salary"
-          />
-          <Pressable style={styles.modalButton} onPress={handleSave} accessibilityLabel="Save job">
-            <Text style={styles.modalButtonText}>Save</Text>
-          </Pressable>
-        </View>
-      </Animated.View>
-    </Modal>
-  );
-};
-
-// Memoized Table Row
-const TableRow = memo(
-  ({
-    item,
-    index,
-    totalTableWidth,
-    setSelectedJob,
-    setIsDetailsOpen,
-    setIsEditOpen,
-    toastNotify,
-    handleDelete,
-    setValidationModalOpen,
-    setValidationItem,
-    rowHighlight,
-    setRowHighlight,
-  }: {
-    item: any;
-    index: number;
-    totalTableWidth: number;
-    setSelectedJob: React.Dispatch<React.SetStateAction<Job | null>>;
-    setIsDetailsOpen: React.Dispatch<React.SetStateAction<boolean>>;
-    setIsEditOpen: React.Dispatch<React.SetStateAction<boolean>>;
-    toastNotify: (params: { title: string; message: string; type: string }) => void;
-    handleDelete: (job: Job) => void;
-    setValidationModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
-    setValidationItem: React.Dispatch<React.SetStateAction<Job | null>>;
-    rowHighlight: string | null;
-    setRowHighlight: React.Dispatch<React.SetStateAction<string | null>>;
-  }) => {
-    return (
+  // Render table row
+  const renderTableRow = useCallback(
+    ({item, index}: {item: any; index: number}) => (
       <Pressable
         style={[
           styles.tableRow,
           {
             minWidth: totalTableWidth,
-            backgroundColor: rowHighlight === item._id ? '#B0E0E6' : index % 2 === 0 ? '#FFFFFF' : '#F9FAFB',
+            backgroundColor:
+              rowHighlight === item._id
+                ? '#B0E0E6'
+                : index % 2 === 0
+                ? '#FFFFFF'
+                : '#F9FAFB',
           },
         ]}
         onPress={() => {
-          setSelectedJob(item);
-          setIsDetailsOpen(true);
+          setSelectedUser(item);
+          setModalState({type: 'viewDetails', data: item});
         }}
         onPressIn={() => setRowHighlight(item._id)}
         onPressOut={() => setRowHighlight(null)}
-        accessibilityLabel={`View details for ${item.jobDetails?.jobTitle ?? 'job'}`}
-        accessibilityRole="button"
-      >
-        <Text style={[styles.tableCell, { width: COLUMN_WIDTHS.jobTitle }]} numberOfLines={1} ellipsizeMode="tail">
-          {item.jobDetails?.jobTitle ?? 'NA'}
+        accessibilityLabel={`View details for job ${item.name || 'Unknown'}`}
+        accessibilityRole="button">
+        <Text
+          style={[styles.tableCell, {width: COLUMN_WIDTHS.jobType}]}
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          {item.jobDetails?.jobType || 'N/A'}
         </Text>
-        <Text style={[styles.tableCell, { width: COLUMN_WIDTHS.jobScope }]} numberOfLines={1} ellipsizeMode="tail">
-          {formatJobScope(item.jobScope ?? '')}
+        <Text
+          style={[styles.tableCell, {width: COLUMN_WIDTHS.jobTitle}]}
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          {item.jobDetails?.jobTitle || 'N/A'}
         </Text>
-        <Text style={[styles.tableCell, { width: COLUMN_WIDTHS.salary }]} numberOfLines={1} ellipsizeMode="tail">
-          ₹ {item.jobDetails?.salary ?? 'NA'}
-        </Text>
-        {item.jobScope === 'abroad' && (
-          <Pressable
-            style={[styles.tableCell, { width: COLUMN_WIDTHS.passportNumber }]}
-            onPress={() => {
-              if (!item.jobDetails?.isVerified) {
-                // setValidationItem(item);
-                // setValidationModalOpen(true);
-              } else {
-                // toastNotify({ title: 'Already Verified', message: 'Passport is already validated.' });
-              }
-            }}
-            accessibilityLabel={`Validate passport for ${item.jobDetails?.jobTitle ?? 'job'}`}
-            accessibilityRole="button"
-          >
-            <Text style={styles.tableCellText} numberOfLines={1} ellipsizeMode="tail">
-              {maskAadhaar(item.jobDetails?.passportNumber)}
+        <View style={[styles.tableCell, {width: COLUMN_WIDTHS.jobScope}]}>
+          <View
+            style={{
+              backgroundColor:
+                item?.jobScope === 'hyper_local'
+                  ? '#D0F0C0'
+                  : item?.jobScope === 'abroad'
+                  ? '#BBDEFB'
+                  : '#E0E0E0',
+              paddingHorizontal: 8,
+              paddingVertical: 2,
+              borderRadius: 12,
+              alignSelf: 'center',
+            }}>
+            <Text
+              style={{
+                color:
+                  item?.jobScope === 'hyper_local'
+                    ? '#1B5E20'
+                    : item?.jobScope === 'abroad'
+                    ? '#0D47A1'
+                    : '#757575',
+                fontSize: 12,
+                fontWeight: '600',
+              }}
+              numberOfLines={1}
+              ellipsizeMode="tail">
+              {item?.jobScope === 'hyper_local'
+                ? 'Hyper Local'
+                : item?.jobScope === 'abroad'
+                ? 'Abroad'
+                : 'N/A'}
             </Text>
+          </View>
+        </View>
+
+        <Text
+          style={[styles.tableCell, {width: COLUMN_WIDTHS.employerName}]}
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          {item.employerName?.name || 'N/A'}
+        </Text>
+        <Text
+          style={[styles.tableCell, {width: COLUMN_WIDTHS.agentName}]}
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          {item?.agentName?.name || 'N/A'}
+        </Text>
+        <Text
+          style={[styles.tableCell, {width: COLUMN_WIDTHS.createdBy}]}
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          {item.createdBy?.name || 'Unknown'}
+        </Text>
+        <View style={[styles.tableCell, {width: COLUMN_WIDTHS.actions}]}>
+          <Pressable
+            onPress={() => handleEditData(item)}
+            accessibilityLabel={`Edit job ${item.name || 'Unknown'}`}
+            accessibilityRole="button">
+            <Text style={styles.actionText}>Edit</Text>
           </Pressable>
-        )}
-        {item.jobScope !== 'abroad' && (
-          <Text style={[styles.tableCell, { width: COLUMN_WIDTHS.passportNumber }]} numberOfLines={1} ellipsizeMode="tail">
-            NA
-          </Text>
-        )}
-        <View style={[styles.tableCell, { width: COLUMN_WIDTHS.actions, flexDirection: 'row', gap: 6 }]}>
-          <TouchableOpacity
-            onPress={() => {
-              setSelectedJob(item);
-              setIsEditOpen(true);
-            }}
-            accessibilityLabel={`Edit ${item.jobDetails?.jobTitle ?? 'job'}`}
-            accessibilityRole="button"
-          >
-            <Text style={[styles.iconText, { color: '#4FD1C5' }]}>✏️</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => handleDelete(item)}
-            accessibilityLabel={`Delete ${item.jobDetails?.jobTitle ?? 'job'}`}
-            accessibilityRole="button"
-          >
-            <Text style={[styles.iconText, { color: '#EF4444' }]}>🗑️</Text>
-          </TouchableOpacity>
         </View>
       </Pressable>
+    ),
+    [totalTableWidth, rowHighlight, toastNotify, handleEditData],
+  );
+
+  // Render add options modal
+  const renderAddOptionsModal = useCallback(() => {
+    if (modalState.type !== 'addOptions') return null;
+
+    return (
+      <Modal
+        visible
+        animationType="fade"
+        transparent
+        onRequestClose={() => setModalState({type: 'none'})}>
+        <View style={styles.modalContainer}>
+          <Animated.View
+            style={[
+              styles.modalContent,
+              {
+                opacity: modalFadeAnim,
+                transform: [
+                  {
+                    scale: modalFadeAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.95, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}>
+            <View style={{height: 1, backgroundColor: '#E5E7EB'}} />
+            <View style={[styles.modalBody, {alignItems: 'center', gap: 16}]}>
+              <TouchableOpacity
+                style={[
+                  styles.modalButton,
+                  styles.button,
+                  {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    width: '100%',
+                  },
+                ]}
+                onPress={handleAddData}
+                accessibilityLabel="Add single job"
+                accessibilityRole="button"
+                activeOpacity={0.85}>
+                <Text style={styles.buttonText}>👤 Add Single Agent</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modalButton,
+                  styles.button,
+                  {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    width: '100%',
+                  },
+                  bulkUploadLoading && styles.buttonDisabled,
+                ]}
+                onPress={handleBulkUpload}
+                disabled={bulkUploadLoading}
+                accessibilityLabel="Add bulk agents"
+                accessibilityRole="button"
+                activeOpacity={0.85}>
+                <Text style={styles.buttonText}>
+                  📁 {bulkUploadLoading ? 'Uploading...' : 'Add Bulk Agents'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <View style={[styles.modalFooter, {justifyContent: 'center'}]}>
+              <TouchableOpacity
+                style={[
+                  styles.cancelButton,
+                  {
+                    minWidth: 140,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    borderColor: '#008080',
+                  },
+                ]}
+                onPress={() => setModalState({type: 'none'})}
+                accessibilityLabel="Cancel modal"
+                accessibilityRole="button"
+                activeOpacity={0.8}>
+                <Text style={[styles.cancelButtonText, {fontSize: 15}]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
     );
-  },
-  (prevProps, nextProps) => prevProps.item === nextProps.item && prevProps.index === nextProps.index
-);
+  }, [
+    modalState,
+    handleAddData,
+    handleBulkUpload,
+    bulkUploadLoading,
+    modalFadeAnim,
+  ]);
 
-const COLUMN_WIDTHS = {
-  jobTitle: 200,
-  jobScope: 120,
-  salary: 100,
-  passportNumber: 120,
-  actions: 100,
-};
-
-const JobList: React.FC = () => {
-  const [jobData, setJobData] = useState<Job[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isTabLoading, setIsTabLoading] = useState(true);
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [totalPages, setTotalPages] = useState(1);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [uploadedFile, setUploadedFile] = useState<FileObject[] | null>(null);
-  const [activeTab, setActiveTab] = useState<'hyper_local' | 'abroad'>('hyper_local');
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const [isFabOpen, setIsFabOpen] = useState(false);
-  const [sortField, setSortField] = useState<'jobTitle' | 'salary' | null>(null);
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [validationModalOpen, setValidationModalOpen] = useState(false);
-  const [validationItem, setValidationItem] = useState<Job | null>(null);
-  const [rowHighlight, setRowHighlight] = useState<string | null>(null);
-
-  const { toastNotify } = useContext(AppContext);
-  const prevActiveTab = useRef(activeTab);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const pageChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const tabAnim = useRef(new Animated.Value(activeTab === 'hyper_local' ? 0 : 1)).current;
-  const fabAnim = useRef(new Animated.Value(0)).current;
-
-  const getUserData = useCallback(
-    async (isTabSwitch = false) => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-      abortControllerRef.current = new AbortController();
-
-      try {
-        if (isTabSwitch) {
-          setIsTabLoading(true);
-        } else {
-          setIsLoading(true);
-        }
-        const response: any = await appRequest('hyperJob', 'getHyperJobData', {
-          page: currentPage,
-          limit: 10,
-          type: activeTab,
-          search: search.trim(),
-        });
-        if (response.status === 'success') {
-          setJobData(response.data ?? []);
-          setTotalPages(response.totalPages ?? 1);
-        } else {
-          toastNotify({
-            title: 'Error',
-            message: response.message ?? 'Failed to fetch jobs',
-            type: 'error',
-          });
-          setJobData([]);
-        }
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name === 'AbortError') {
-          return;
-        }
-        toastNotify({
-          title: 'Error',
-          message: err instanceof Error ? err.message : 'Failed to fetch jobs',
-          type: 'error',
-        });
-        setJobData([]);
-      } finally {
-        if (isTabSwitch) {
-          setIsTabLoading(false);
-        } else {
-          setIsLoading(false);
-        }
-        abortControllerRef.current = null;
-      }
-    },
-    [currentPage, activeTab, search, toastNotify]
-  );
-
-  useEffect(() => {
-    let debounceTimeout: NodeJS.Timeout | null = null;
-    if (!search) {
-      getUserData(prevActiveTab.current !== activeTab);
-    } else {
-      debounceTimeout = setTimeout(() => {
-        getUserData();
-      }, 500);
-    }
-    return () => {
-      if (debounceTimeout) clearTimeout(debounceTimeout);
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-        abortControllerRef.current = null;
-      }
-    };
-  }, [currentPage, activeTab, search, getUserData]);
-
-  useEffect(() => {
-    getUserData(true);
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    Animated.timing(tabAnim, {
-      toValue: activeTab === 'hyper_local' ? 0 : 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-    prevActiveTab.current = activeTab;
-  }, [activeTab]);
-
-  const handlePageChange = useCallback(
-    (page: number) => {
-      if (page < 1 || page > totalPages || page === currentPage) return;
-      if (pageChangeTimeoutRef.current) {
-        clearTimeout(pageChangeTimeoutRef.current);
-      }
-      pageChangeTimeoutRef.current = setTimeout(() => {
-        setCurrentPage(page);
-      }, 300);
-    },
-    [totalPages, currentPage]
-  );
-
-  const handleFileUpload = useCallback(async () => {
-    const file = { name: 'sample.xlsx', size: 1024, type: 'application/vnd.ms-excel' };
-    try {
-      const contentObject: { [key: number]: number } = {};
-      for (let i = 0; i < file.size; i++) {
-        contentObject[i] = Math.random() * 255;
-      }
-      const updatedFile: FileObject[] = [
-        {
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          content: contentObject,
-          url: 'file://sample.xlsx',
-        },
-      ];
-      setUploadedFile(updatedFile);
-    } catch (err: unknown) {
-      toastNotify({
-        title: 'Error',
-        message: err instanceof Error ? err.message : 'Failed to select file',
-        type: 'error',
-      });
-    }
-  }, [toastNotify]);
-
-  const handlePostExcel = useCallback(async () => {
-    if (!uploadedFile || uploadedFile.length === 0) return;
-    try {
-      const data = uploadedFile.map((file) => ({
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        content: file.content,
-      }));
-      const response: any = await appRequest('hyperJob', 'bulkCreateHyperJobData', { file: data });
-      if (response.status === 'success') {
-        getUserData();
-        setUploadedFile(null);
-        toastNotify({ title: 'Uploaded Successfully', message: '', type: 'success' });
-      } else {
-        toastNotify({
-          title: 'Upload Failed',
-          message: response.message ?? 'Failed to upload',
-          type: 'error',
-        });
-      }
-    } catch (err: unknown) {
-      toastNotify({
-        title: 'Upload Failed',
-        message: err instanceof Error ? err.message : 'Failed to upload',
-        type: 'error',
-      });
-    }
-  }, [uploadedFile, getUserData, toastNotify]);
-
-  useEffect(() => {
-    handlePostExcel();
-  }, [uploadedFile, handlePostExcel]);
-
-  const toggleFab = useCallback(() => {
-    Animated.timing(fabAnim, {
-      toValue: isFabOpen ? 0 : 1,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-    setIsFabOpen((prev) => !prev);
-  }, [isFabOpen]);
-
-  const clearSearch = () => {
-    setSearch('');
-    setCurrentPage(1);
-  };
-
-  const handleSort = useCallback((field: 'jobTitle' | 'salary') => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('asc');
-    }
-  }, [sortField, sortOrder]);
-
-  const sortedData = useMemo(() => {
-    return [...jobData].sort((a, b) => {
-      if (!sortField) return 0;
-      const aValue = sortField === 'jobTitle' ? a.jobDetails?.jobTitle : a.jobDetails?.salary;
-      const bValue = sortField === 'jobTitle' ? b.jobDetails?.jobTitle : b.jobDetails?.salary;
-      if (!aValue || !bValue) return 0;
-      if (sortField === 'salary') {
-        return sortOrder === 'asc'
-          ? parseFloat(aValue) - parseFloat(bValue)
-          : parseFloat(bValue) - parseFloat(aValue);
-      }
-      return sortOrder === 'asc'
-        ? aValue.localeCompare(bValue)
-        : bValue.localeCompare(aValue);
-    });
-  }, [jobData, sortField, sortOrder]);
-
-  const handleDelete = useCallback(
-    async (job: Job) => {
-      Alert.alert(
-        'Confirm Delete',
-        `Are you sure you want to delete ${job.jobDetails?.jobTitle ?? 'this job'}?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                const response: any = await appRequest('hyperJob', 'deleteHyperJob', { id: job._id });
-                if (response.status === 'success') {
-                  toastNotify({
-                    title: 'Success',
-                    message: 'Job deleted successfully',
-                    type: 'success',
-                  });
-                  getUserData();
-                } else {
-                  toastNotify({
-                    title: 'Error',
-                    message: response.message ?? 'Failed to delete job',
-                    type: 'error',
-                  });
-                }
-              } catch (err: unknown) {
-                toastNotify({
-                  title: 'Error',
-                  message: err instanceof Error ? err.message : 'Failed to delete job',
-                  type: 'error',
-                });
-              }
-            },
-          },
-        ]
-      );
-    },
-    [toastNotify, getUserData]
-  );
-
-  const columns = [
-    { key: 'jobTitle', title: 'Job Title', width: COLUMN_WIDTHS.jobTitle },
-    { key: 'jobScope', title: 'Job Scope', width: COLUMN_WIDTHS.jobScope },
-    { key: 'salary', title: 'Salary', width: COLUMN_WIDTHS.salary },
-    { key: 'passportNumber', title: 'Passport No.', width: COLUMN_WIDTHS.passportNumber },
-    { key: 'actions', title: 'Actions', width: COLUMN_WIDTHS.actions },
-  ];
-
-  const totalTableWidth = columns.reduce((sum, col) => sum + col.width, 0);
-
-  const renderTableHeader = useCallback(() => (
-    <View style={[styles.tableHeader, { minWidth: totalTableWidth }]}>
-      {columns.map((column) => (
-        <Pressable
-          key={column.key}
-          style={[styles.tableHeaderCell, { width: column.width }]}
-          onPress={() =>
-            column.key === 'jobTitle'
-              ? handleSort('jobTitle')
-              : column.key === 'salary'
-              ? handleSort('salary')
-              : null
-          }
-          accessibilityLabel={`Sort by ${column.title}`}
-          accessibilityRole="button"
-        >
-          <Text style={styles.tableHeaderText} numberOfLines={1} ellipsizeMode="tail">
-            {column.title}
-            {sortField === column.key && (sortOrder === 'asc' ? ' ↑' : ' ↓')}
-          </Text>
-        </Pressable>
-      ))}
-    </View>
-  ), [totalTableWidth, sortField, sortOrder, handleSort]);
-
-  const renderTable = useCallback(() => (
-    <View style={[styles.tableContainer, { height: screenHeight * 0.6 }]}>
-      <ScrollView horizontal bounces={false} showsHorizontalScrollIndicator={true}>
-        <View style={{ minWidth: totalTableWidth }}>
+  // Render tab content
+  const renderTabContent = (tab: 'hyper_local' | 'abroad') => (
+    <View style={styles.tableContainer}>
+      <ScrollView horizontal bounces={false}>
+        <View style={{minWidth: totalTableWidth}}>
           {renderTableHeader()}
           <FlatList
-            data={sortedData}
-            renderItem={({ item, index }) => (
-              <TableRow
-                item={item}
-                index={index}
-                totalTableWidth={totalTableWidth}
-                setSelectedJob={setSelectedJob}
-                setIsDetailsOpen={setIsDetailsOpen}
-                setIsEditOpen={setIsEditOpen}
-                toastNotify={toastNotify}
-                handleDelete={handleDelete}
-                setValidationModalOpen={setValidationModalOpen}
-                setValidationItem={setValidationItem}
-                rowHighlight={rowHighlight}
-                setRowHighlight={setRowHighlight}
-              />
-            )}
-            keyExtractor={(item, index) => item._id || `${item.jobDetails?.jobTitle}-${index}`}
+            data={data[tab]}
+            renderItem={renderTableRow}
+            keyExtractor={item => item._id}
             initialNumToRender={10}
             windowSize={10}
             ListEmptyComponent={
-              isTabLoading ? (
-                <CustomLoader />
-              ) : !isLoading && sortedData.length === 0 ? (
-                <View style={[styles.emptyState, { height: screenHeight * 0.6 }]}>
-                  <Text style={styles.noDataText}>No jobs found</Text>
+              loading[tab] ? null : (
+                <View style={styles.emptyState}>
+                  <Text style={styles.noDataText}>No {tab} agents found</Text>
                   <Pressable
-                    style={styles.emptyStateButton}
-                    onPress={() => setIsAddOpen(true)}
-                    accessibilityLabel="Add a job"
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.emptyStateButtonText}>Add a Job</Text>
+                    style={styles.button}
+                    onPress={() => handleRefresh(tab)}
+                    accessibilityLabel={`Retry loading ${tab} agents`}
+                    accessibilityRole="button">
+                    <Text style={styles.buttonText}>Retry</Text>
                   </Pressable>
                 </View>
-              ) : null
+              )
             }
-            contentContainerStyle={{ paddingBottom: 80 }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing[tab]}
+                onRefresh={() => handleRefresh(tab)}
+                tintColor="#008080"
+              />
+            }
           />
         </View>
       </ScrollView>
     </View>
-  ), [
-    sortedData,
-    isTabLoading,
-    isLoading,
-    totalTableWidth,
-    renderTableHeader,
-    setSelectedJob,
-    setIsDetailsOpen,
-    setIsEditOpen,
-    toastNotify,
-    handleDelete,
-    setValidationModalOpen,
-    setValidationItem,
-    rowHighlight,
-    setRowHighlight,
-  ]);
-
-  const renderPagination = useCallback(() => (
-    <View style={styles.paginationContainer}>
-      <Pressable
-        style={[styles.paginationButton, currentPage === 1 && styles.paginationButtonDisabled]}
-        onPress={() => handlePageChange(currentPage - 1)}
-        accessibilityLabel="Go to previous page"
-        accessibilityRole="button"
-        disabled={currentPage === 1}
-      >
-        <Text style={styles.paginationButtonText}>Previous</Text>
-      </Pressable>
-      <Text style={styles.paginationText}>
-        Page {currentPage} of {totalPages}
-      </Text>
-      <Pressable
-        style={[styles.paginationButton, currentPage === totalPages && styles.paginationButtonDisabled]}
-        onPress={() => handlePageChange(currentPage + 1)}
-        accessibilityLabel="Go to next page"
-        accessibilityRole="button"
-        disabled={currentPage === totalPages}
-      >
-        <Text style={styles.paginationButtonText}>Next</Text>
-      </Pressable>
-    </View>
-  ), [totalPages, currentPage, handlePageChange]);
+  );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
-      <View style={{ flex: 1 }}>
+    <ErrorBoundary>
+      <SafeAreaView
+        style={styles.container}
+        edges={['top', 'bottom', 'left', 'right']}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Job Listings</Text>
-          <View style={styles.searchContainer}>
-            <Text style={styles.searchIcon}>🔍</Text>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search jobs..."
-              value={search}
-              onChangeText={setSearch}
-              accessibilityLabel="Search jobs"
-              accessibilityRole="search"
-            />
-            {search.length > 0 && (
-              <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
-                <Text style={styles.clearIcon}>✖️</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        <View style={styles.tabContainer}>
-          <View style={styles.tabList}>
-            {['Hyper Local', 'Abroad'].map((tab, index) => (
-              <Pressable
-                key={tab}
-                style={[
-                  styles.tab,
-                  activeTab === (index === 0 ? 'hyper_local' : 'abroad') && styles.activeTab,
-                ]}
-                onPress={() => {
-                  setActiveTab(index === 0 ? 'hyper_local' : 'abroad');
-                  setCurrentPage(1);
-                  setUploadedFile(null);
-                }}
-                accessibilityLabel={`Switch to ${tab} jobs`}
-                accessibilityRole="button"
-              >
-                <Text
-                  style={[
-                    styles.tabText,
-                    activeTab === (index === 0 ? 'hyper_local' : 'abroad') && styles.activeTabText,
-                  ]}
-                >
-                  {tab}
-                </Text>
-              </Pressable>
-            ))}
-            <Animated.View
+          <Text style={styles.headerTitle}>Job Lists</Text>
+          <View style={styles.tabContainer}>
+            <Pressable
               style={[
-                styles.tabIndicator,
-                {
-                  transform: [
-                    {
-                      translateX: tabAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0, screenWidth / 2 - 16],
-                      }),
-                    },
-                  ],
-                } as ViewStyle,
+                styles.tabButton,
+                activeTab === 'hyper_local' && styles.tabButtonActive,
               ]}
-            />
+              onPress={() => handleTabChange('hyper_local')}
+              accessibilityLabel="View hyper_local agents"
+              accessibilityRole="button">
+              <Text
+                style={[
+                  styles.tabButtonText,
+                  activeTab === 'hyper_local' && styles.tabButtonTextActive,
+                ]}>
+                Local Jobs
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.tabButton,
+                activeTab === 'abroad' && styles.tabButtonActive,
+              ]}
+              onPress={() => handleTabChange('abroad')}
+              accessibilityLabel="View abroad agents"
+              accessibilityRole="button">
+              <Text
+                style={[
+                  styles.tabButtonText,
+                  activeTab === 'abroad' && styles.tabButtonTextActive,
+                ]}>
+                Abroad Jobs
+              </Text>
+            </Pressable>
           </View>
-          {isLoading && (
-            <View style={styles.loaderOverlay}>
-              <ActivityIndicator size="large" color="#4FD1C5" />
-              <Text style={styles.loaderText}>{isTabLoading ? 'Loading Jobs...' : 'Searching Jobs...'}</Text>
+          <View style={styles.headerActions}>
+            <View style={styles.searchContainer}>
+              <TextInput
+                style={styles.searchInput}
+                value={search[activeTab]}
+                onChangeText={value => handleSearch(value, activeTab)}
+                placeholder={`Search jobs...`}
+                placeholderTextColor="#9CA3AF"
+                accessibilityLabel={`Search ${activeTab} jobs`}
+                accessibilityRole="search"
+              />
+              {search[activeTab].length > 0 && (
+                <TouchableOpacity
+                  style={styles.clearButton}
+                  onPress={() => handleClearSearch(activeTab)}
+                  accessibilityLabel={`Clear search for ${activeTab} jpbs`}
+                  accessibilityRole="button">
+                  <Text style={styles.clearButtonText}>X</Text>
+                </TouchableOpacity>
+              )}
             </View>
-          )}
-          {renderTable()}
+            <Pressable
+              style={styles.iconButton}
+              onPress={() => handleRefresh(activeTab)}
+              accessibilityLabel={`Refresh ${activeTab} job list`}
+              accessibilityRole="button">
+              <Text style={styles.buttonText}>Refresh</Text>
+            </Pressable>
+            <Pressable
+              style={styles.iconButton}
+              onPress={() => setModalState({type: 'addOptions'})}
+              accessibilityLabel="Open add job options"
+              accessibilityRole="button">
+              <Text style={styles.buttonText}>Add</Text>
+            </Pressable>
+          </View>
         </View>
 
-        {renderPagination()}
+        {loading[activeTab] && (
+          <View style={styles.loaderOverlay}>
+            <ActivityIndicator size="large" color="#008080" />
+            <Text style={styles.loadingText}>
+              {initialLoad[activeTab]
+                ? `Loading ${activeTab} Agents...`
+                : `Searching ${activeTab} Agents...`}
+            </Text>
+          </View>
+        )}
 
-        <Animated.View
-  style={[
-    styles.fabContainer,
-    {
-      transform: [
-        { translateY: fabAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -240] }) },
-      ],
-    },
-  ]}
->
-          {isFabOpen && (
-            <>
-              <TouchableOpacity
-                style={styles.fabSubButton}
-                onPress={() => setIsAddOpen(true)}
-                accessibilityLabel="Add new job"
-                accessibilityRole="button"
-              >
-                <View style={styles.fabSubButtonContent}>
-                  <Text style={styles.fabIcon}>➕</Text>
-                  <Text style={styles.fabSubButtonLabel}>Add Job</Text>
-                </View>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.fabSubButton}
-                onPress={handleFileUpload}
-                accessibilityLabel="Upload Excel file"
-                accessibilityRole="button"
-              >
-                <View style={styles.fabSubButtonContent}>
-                  <Text style={styles.fabIcon}>⬆️</Text>
-                  <Text style={styles.fabSubButtonLabel}>Upload</Text>
-                </View>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.fabSubButton}
-                onPress={() => getUserData()}
-                accessibilityLabel="Refresh job list"
-                accessibilityRole="button"
-              >
-                <View style={styles.fabSubButtonContent}>
-                  <Text style={styles.fabIcon}>🔄</Text>
-                  <Text style={styles.fabSubButtonLabel}>Refresh</Text>
-                </View>
-              </TouchableOpacity>
-            </>
-          )}
-          <TouchableOpacity
-            style={styles.fabButton}
-            onPress={toggleFab}
-            accessibilityLabel={isFabOpen ? 'Close actions' : 'Open actions'}
-            accessibilityRole="button"
-          >
-            <Text style={styles.fabIcon}>{isFabOpen ? '✖️' : '➕'}</Text>
-          </TouchableOpacity>
-        </Animated.View>
+        {renderTabContent(activeTab)}
 
-        <AddJobDrawer
-          isOpen={isAddOpen}
-          onClose={() => setIsAddOpen(false)}
-          jobScope={activeTab}
-          getHyperJobData={getUserData}
+        <View style={styles.paginationContainer}>
+          <Pressable
+            style={[
+              styles.paginationButton,
+              currentPage[activeTab] === 1 && styles.paginationButtonDisabled,
+            ]}
+            onPress={() =>
+              handlePageChange(currentPage[activeTab] - 1, activeTab)
+            }
+            accessibilityLabel={`Go to previous page of ${activeTab} agents`}
+            accessibilityRole="button">
+            <Text style={styles.paginationButtonText}>Previous</Text>
+          </Pressable>
+          <Text style={styles.paginationText}>
+            Page {currentPage[activeTab]} of {totalPages[activeTab]}
+          </Text>
+          <Pressable
+            style={[
+              styles.paginationButton,
+              currentPage[activeTab] === totalPages[activeTab] &&
+                styles.paginationButtonDisabled,
+            ]}
+            onPress={() =>
+              handlePageChange(currentPage[activeTab] + 1, activeTab)
+            }
+            accessibilityLabel={`Go to next page of ${activeTab} agents`}
+            accessibilityRole="button">
+            <Text style={styles.paginationButtonText}>Next</Text>
+          </Pressable>
+        </View>
+
+        <ViewModal
+          isOpen={modalState.type === 'viewDetails'}
+          user={selectedUser}
+          onClose={() => setModalState({type: 'none'})}
         />
-        <JobDetails
-          isOpen={isDetailsOpen}
-          onClose={() => {
-            setIsDetailsOpen(false);
-            setSelectedJob(null);
-          }}
-          jobDetails={selectedJob}
-        />
-        <JobEditDrawer
-          isOpen={isEditOpen}
-          onClose={() => {
-            setIsEditOpen(false);
-            setSelectedJob(null);
-          }}
-          job={selectedJob}
-          setEditJobDetails={setSelectedJob}
-          getUserData={getUserData}
-        />
-        {validationModalOpen && validationItem && (
-          <PassportValidationComponent
-            open={validationModalOpen}
-            onClose={() => setValidationModalOpen(false)}
-            item={validationItem}
-            handleGetUser={getUserData}
+        {modalState.type === 'editJob' && selectedUser && (
+          <EditModal
+            isOpen={modalState.type === 'editJob'}
+            data={selectedUser}
+            onClose={() => setModalState({type: 'none'})}
+            fetchRecords={() =>
+              handleGetUser(
+                currentPage[activeTab],
+                search[activeTab],
+                activeTab,
+              )
+            }
           />
         )}
-      </View>
-    </SafeAreaView>
+        <CreateModal
+          isOpen={modalState.type === 'createJob'}
+          onClose={() => setModalState({type: 'none'})}
+          fetchRecords={() =>
+            handleGetUser(currentPage[activeTab], search[activeTab], activeTab)
+          }
+        />
+        {renderAddOptionsModal()}
+      </SafeAreaView>
+    </ErrorBoundary>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7FAFC',
+    backgroundColor: '#F1F5F9',
   },
   header: {
+    padding: 12,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: '#D1D5DB',
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
-      android: { elevation: 3 },
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {elevation: 3},
     }),
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1A202C',
-    textAlign: 'center',
-    marginBottom: 12,
+    color: '#008080',
+    marginBottom: 8,
   },
-  searchContainer: {
+  tabContainer: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#F3F4F6',
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F3F4F6',
+  },
+  tabButtonActive: {
+    backgroundColor: '#008080',
+  },
+  tabButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  tabButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EDF2F7',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    marginHorizontal: 8,
+    gap: 6,
+    flexWrap: 'wrap',
   },
-  searchIcon: {
-    fontSize: 20,
-    color: '#718096',
-    marginRight: 8,
+  searchContainer: {
+    flex: 1,
+    minWidth: 150,
+    maxWidth: 300,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
-    color: '#2D3748',
+    fontSize: 15,
+    color: '#111827',
     paddingVertical: Platform.OS === 'ios' ? 8 : 6,
   },
   clearButton: {
     padding: 8,
-  },
-  clearIcon: {
-    fontSize: 20,
-    color: '#718096',
-  },
-  tabContainer: {
-    flex: 1,
-    paddingHorizontal: 8,
-  },
-  tabList: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 4,
-    marginBottom: 16,
-    marginHorizontal: 8,
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2 },
-      android: { elevation: 2 },
-    }),
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
+    justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 16,
   },
-  activeTab: {
-    backgroundColor: '#4FD1C5',
-  },
-  tabText: {
+  clearButtonText: {
     fontSize: 14,
+    color: '#6B7280',
+  },
+  iconButton: {
+    backgroundColor: '#008080',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 60,
+  },
+  button: {
+    backgroundColor: '#008080',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalButton: {
+    minWidth: 150,
+  },
+  buttonDisabled: {
+    backgroundColor: '#D1D5DB',
+    opacity: 0.5,
+  },
+  buttonText: {
+    fontSize: 16,
     fontWeight: '600',
-    color: '#718096',
-  },
-  activeTabText: {
     color: '#FFFFFF',
-    fontWeight: '700',
   },
-  tabIndicator: {
-    position: 'absolute',
-    bottom: 4,
-    width: '50%',
-    height: 2,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 1,
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#008080',
+  },
+  actionText: {
+    fontSize: 14,
+    color: '#008080',
+    fontWeight: '500',
   },
   tableContainer: {
     flex: 1,
-    marginHorizontal: 8,
+    marginHorizontal: 16,
     marginVertical: 8,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#D1D5DB',
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
-      android: { elevation: 3 },
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {elevation: 3},
     }),
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#F7FAFC',
+    backgroundColor: '#E5E7EB',
     paddingVertical: 12,
     borderBottomWidth: 2,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: '#D1D5DB',
   },
   tableHeaderCell: {
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 8,
     borderRightWidth: 1,
-    borderRightColor: '#E2E8F0',
+    borderRightColor: '#D1D5DB',
   },
   tableHeaderText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1A202C',
+    color: '#111827',
     textAlign: 'center',
   },
   tableRow: {
     flexDirection: 'row',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    height: 60,
+    borderBottomColor: '#D1D5DB',
+    height: 48,
   },
   tableCell: {
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 8,
     borderRightWidth: 1,
-    borderRightColor: '#E2E8F0',
+    borderRightColor: '#D1D5DB',
   },
   tableCellText: {
     fontSize: 13,
-    color: '#2D3748',
+    color: '#111827',
     textAlign: 'center',
-  },
-  iconText: {
-    fontSize: 15,
-  },
-  paginationContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    gap: 16,
-  },
-  paginationButton: {
-    backgroundColor: '#EDF2F7',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    minWidth: 100,
-    alignItems: 'center',
-  },
-  paginationButtonDisabled: {
-    opacity: 0.5,
-  },
-  paginationButtonText: {
-    fontSize: 14,
-    color: '#2D3748',
-    fontWeight: '600',
-  },
-  paginationText: {
-    fontSize: 14,
-    color: '#2D3748',
-    fontWeight: '400',
   },
   loaderOverlay: {
     position: 'absolute',
@@ -1210,27 +903,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 1000,
   },
-  loaderContainer: {
-    width: 60,
-    height: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 30,
-    backgroundColor: '#FFFFFF',
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 },
-      android: { elevation: 4 },
-    }),
-  },
-  loaderIcon: {
-    fontSize: 40,
-    color: '#4FD1C5',
-  },
-  loaderText: {
-    fontSize: 16,
-    color: '#2D3748',
-    marginTop: 16,
-    fontWeight: '500',
+  loadingText: {
+    fontSize: 15,
+    color: '#6B7280',
+    marginTop: 8,
   },
   emptyState: {
     padding: 20,
@@ -1238,132 +914,147 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 200,
   },
-  emptyStateButton: {
-    backgroundColor: '#4FD1C5',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
   noDataText: {
-    fontSize: 16,
-    color: '#718096',
+    fontSize: 15,
+    color: '#6B7280',
     textAlign: 'center',
-    marginBottom: 16,
-  },
-  emptyStateButtonText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  fabContainer: {
-    position: 'absolute',
-    bottom: 80,
-    right: 24,
-    alignItems: 'flex-end',
-    zIndex: 1000,
-  },
-  fabButton: {
-    backgroundColor: '#4FD1C5',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
-      android: { elevation: 6 },
-    }),
-  },
-  fabSubButton: {
-    backgroundColor: '#4FD1C5',
-    width: 60,
-    height: 30,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
     marginBottom: 12,
-    flexDirection: 'row',
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 },
-      android: { elevation: 4 },
-    }),
   },
-  fabSubButtonContent: {
+  paginationContainer: {
     flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+    padding: 12,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#D1D5DB',
+    gap: 16,
   },
-  fabSubButtonLabel: {
-    fontSize: 8,
-    color: '#FFFFFF',
+  paginationButton: {
+    backgroundColor: '#F3F4F6',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  paginationButtonDisabled: {
+    opacity: 0.5,
+  },
+  paginationButtonText: {
+    fontSize: 14,
+    color: '#111827',
     fontWeight: '600',
   },
-  fabIcon: {
-    fontSize: 8,
-    color: '#FFFFFF',
+  paginationText: {
+    fontSize: 14,
+    color: '#111827',
+    fontWeight: '400',
   },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    width: '90%',
-    maxWidth: 400,
+    borderRadius: 12,
+    width: Dimensions.get('window').width * 0.9,
+    maxHeight: Dimensions.get('window').height * 0.7,
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 6 },
-      android: { elevation: 5 },
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {elevation: 5},
     }),
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#1A202C',
+    fontWeight: '600',
+    color: '#008080',
+    flex: 1,
   },
-  modalCloseIcon: {
-    fontSize: 24,
-    color: '#718096',
+  closeButton: {
+    padding: 10,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+  },
+  closeText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#374151',
   },
   modalBody: {
-    marginBottom: 16,
-    maxHeight: screenHeight * 0.5,
+    padding: 16,
+    gap: 12,
   },
-  modalText: {
-    fontSize: 14,
-    color: '#2D3748',
-    marginBottom: 8,
-    lineHeight: 20,
+  modalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
   },
-  modalInput: {
-    backgroundColor: '#EDF2F7',
-    borderRadius: 8,
-    padding: 12,
+  cancelButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#D1D5DB',
+  },
+  detailLabel: {
     fontSize: 14,
-    color: '#2D3748',
+    fontWeight: '600',
+    color: '#111827',
+    flex: 1,
+  },
+  detailValue: {
+    fontSize: 14,
+    color: '#111827',
+    flex: 2,
+    textAlign: 'right',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#EF4444',
+    textAlign: 'center',
     marginBottom: 12,
   },
-  modalButton: {
-    backgroundColor: '#4FD1C5',
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  modalButtonText: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    fontWeight: '600',
+  retryButton: {
+    backgroundColor: '#008080',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
   },
 });
 
-export default JobList;
+export default AgentIndex;
