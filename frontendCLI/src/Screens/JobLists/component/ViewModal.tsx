@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { maskAadhaar } from '../../../utils/function';
+import { districtOptions, localBodyOptions } from '../../../utils/variables';
 
 interface ViewModalProps {
   isOpen: boolean;
@@ -105,7 +106,8 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, user, onClose }) => {
                 data: [
                   { label: 'Firm Name', value: user.jobDetails?.firmName },
                   { label: 'Address', value: user.jobDetails?.firmAddress },
-                  { label: 'Local Body', value: user.jobDetails?.localBody },
+                  { label: 'District', value: districtOptions.find((it : any) => it?.value === user.jobDetails?.district)?.label || "NA"},
+                  { label: 'Local Body', value: localBodyOptions.find((it : any) => it?.value === user.jobDetails?.localBody)?.label || "NA"},
                   {
                     label: 'Ward No.',
                     value: user.jobDetails?.localBodyWardNumber,

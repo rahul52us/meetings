@@ -107,7 +107,7 @@ const AgentIndex: React.FC = () => {
     };
   }, []);
 
-const handleGetUser = useCallback(
+  const handleGetUser = useCallback(
     async (page: number, value: string, tab: 'hyper_local' | 'abroad') => {
       try {
         setLoading(prev => ({...prev, [tab]: true}));
@@ -225,8 +225,13 @@ const handleGetUser = useCallback(
       const payload = [
         {file: JSON.stringify(Array.from(byteArray)), agentType: activeTab},
       ];
-      const response: any = await appRequest('job', 'createExcel', payload);
-
+      const response: any = await appRequest(
+        'hyperJob',
+        'bulkCreateHyperJobData',
+        {
+          payload,
+        },
+      );
       if (response.status === 'success' && response.data) {
         setData(prev => ({...prev, [activeTab]: response.data}));
         toastNotify({status: 'success', title: 'Uploaded Successfully'});
@@ -641,8 +646,8 @@ const handleGetUser = useCallback(
             <ActivityIndicator size="large" color="#008080" />
             <Text style={styles.loadingText}>
               {initialLoad[activeTab]
-                ? `Loading ${activeTab} Agents...`
-                : `Searching ${activeTab} Agents...`}
+                ? `Loading ${activeTab} Jobs...`
+                : `Searching ${activeTab} Jobs...`}
             </Text>
           </View>
         )}
@@ -658,7 +663,7 @@ const handleGetUser = useCallback(
             onPress={() =>
               handlePageChange(currentPage[activeTab] - 1, activeTab)
             }
-            accessibilityLabel={`Go to previous page of ${activeTab} agents`}
+            accessibilityLabel={`Go to previous page of ${activeTab} Jobs`}
             accessibilityRole="button">
             <Text style={styles.paginationButtonText}>Previous</Text>
           </Pressable>
@@ -674,7 +679,7 @@ const handleGetUser = useCallback(
             onPress={() =>
               handlePageChange(currentPage[activeTab] + 1, activeTab)
             }
-            accessibilityLabel={`Go to next page of ${activeTab} agents`}
+            accessibilityLabel={`Go to next page of ${activeTab} jobs`}
             accessibilityRole="button">
             <Text style={styles.paginationButtonText}>Next</Text>
           </Pressable>
