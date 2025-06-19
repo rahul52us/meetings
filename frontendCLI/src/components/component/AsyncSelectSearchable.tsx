@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -15,37 +15,71 @@ import {
 type Option = {
   label: string;
   value: string;
+  [key: string]: any;
 };
 
 type Props = {
   label?: string;
-  selectedValue: string;
-  options: any;
-  onValueChange: (value: string) => void;
+  selectedValue: Option | null;
+  defaultOptions?: Option[];
+  fetchOptions: (query: string) => Promise<Option[]>;
+  onValueChange: (option: Option) => void;
   placeholder?: string;
 };
 
-export default function SearchableSelect({
+export default function AsyncSelectSearchable({
   label,
   selectedValue,
-  options,
+  defaultOptions = [],
+  fetchOptions,
   onValueChange,
   placeholder = "Select an option",
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [options, setOptions] = useState<Option[]>(defaultOptions);
+  const [loading, setLoading] = useState(false);
 
-  const filteredOptions = options.filter((opt : any) =>
-    opt?.label?.toLowerCase().includes(search.toLowerCase())
-  );
+  const mergeUnique = (base: Option[], incoming: Option[]) => {
+    const map = new Map<string, Option>();
+    [...base, ...incoming].forEach((opt) => map.set(opt.value, opt));
+    return Array.from(map.values());
+  };
 
-  const selectedLabel = options.find((opt : any) => opt.value === selectedValue)?.label;
+  const fetchAndUpdateOptions = async (text: string) => {
+    setLoading(true);
+    try {
+      const results = await fetchOptions(text);
+      const merged = mergeUnique(options, results);
+      setOptions(merged);
+    } catch (err) {
+      console.error("Error fetching options:", err);
+    }
+    setLoading(false);
+  };
 
-  const handleSelect = (val: string) => {
-    onValueChange(val);
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const delayDebounce = setTimeout(() => {
+      if (search.trim() === "") {
+        setOptions((prev) => mergeUnique(prev, defaultOptions));
+      } else {
+        fetchAndUpdateOptions(search.trim());
+      }
+    }, 600);
+
+    return () => clearTimeout(delayDebounce);
+  }, [search, isOpen]);
+
+  const handleSelect = (option: Option) => {
+    setOptions((prev) => mergeUnique(prev, [option]));
+    onValueChange(option);
     setIsOpen(false);
     setSearch("");
   };
+
+  const selectedLabel = selectedValue?.label || "";
 
   return (
     <View style={{ marginBottom: 12 }}>
@@ -57,9 +91,8 @@ export default function SearchableSelect({
         </Text>
       </TouchableOpacity>
 
-      <Modal visible={isOpen} animationType="slide" transparent={false}>
+      <Modal visible={isOpen} animationType="slide">
         <SafeAreaView style={styles.modalContainer}>
-          {/* Header */}
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{label || "Select Option"}</Text>
             <Pressable onPress={() => setIsOpen(false)}>
@@ -67,7 +100,6 @@ export default function SearchableSelect({
             </Pressable>
           </View>
 
-          {/* Search Input */}
           <View style={styles.searchWrapper}>
             <TextInput
               style={styles.searchInput}
@@ -79,30 +111,30 @@ export default function SearchableSelect({
             />
           </View>
 
-          {/* Option List */}
-          <FlatList
-            data={filteredOptions}
-            keyExtractor={(item) => item.value}
-            contentContainerStyle={styles.optionList}
-            renderItem={({ item }) => {
-              const isSelected = item.value === selectedValue;
-              return (
-                <TouchableOpacity
-                  style={[styles.option, isSelected && styles.selectedOption]}
-                  onPress={() => handleSelect(item.value)}
-                >
-                  <Text style={[styles.optionText, isSelected && styles.selectedText]}>
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            }}
-            ListEmptyComponent={
-              <Text style={styles.noResult}>No options found</Text>
-            }
-          />
+          {loading ? (
+            <Text style={styles.loading}>Loading...</Text>
+          ) : (
+            <FlatList
+              data={options}
+              keyExtractor={(item) => item.value}
+              contentContainerStyle={styles.optionList}
+              renderItem={({ item }) => {
+                const isSelected = item.value === selectedValue?.value;
+                return (
+                  <TouchableOpacity
+                    style={[styles.option, isSelected && styles.selectedOption]}
+                    onPress={() => handleSelect(item)}
+                  >
+                    <Text style={[styles.optionText, isSelected && styles.selectedText]}>
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }}
+              ListEmptyComponent={<Text style={styles.noResult}>No options found</Text>}
+            />
+          )}
 
-          {/* Footer */}
           <View style={styles.footer}>
             <TouchableOpacity onPress={() => setIsOpen(false)} style={styles.cancelBtn}>
               <Text style={styles.cancelText}>Cancel</Text>
@@ -167,6 +199,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#fafafa",
     color: "#000",
+  },
+  loading: {
+    textAlign: "center",
+    padding: 20,
+    fontSize: 16,
+    color: "#555",
   },
   optionList: {
     paddingHorizontal: 16,

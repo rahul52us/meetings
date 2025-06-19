@@ -348,96 +348,8 @@ export const nicOptions = [
       "label": "Undifferentiated goods- and services-producing activities of private households for own use"
     },
     {
-      "value": "99",
-      "label": "Activities of extraterritorial organizations and bodies"
-    },
-    {
-      "value": "11",
-      "label": "Growing of non-perennial crops"
-    },
-    {
-      "value": "12",
-      "label": "Growing of perennial crops"
-    },
-    {
-      "value": "13",
-      "label": "Plant propagation"
-    },
-    {
-      "value": "14",
-      "label": "Animal production"
-    },
-    {
-      "value": "15",
-      "label": "Mixed farming"
-    },
-    {
-      "value": "16",
-      "label": "Support activities to agriculture and post-harvest crop activities"
-    },
-    {
-      "value": "17",
-      "label": "Hunting, trapping and related service activities"
-    },
-    {
-      "value": "21",
-      "label": "Silviculture and other forestry activities"
-    },
-    {
-      "value": "22",
-      "label": "Logging"
-    },
-    {
-      "value": "23",
-      "label": "Gathering of non-wood forest products"
-    },
-    {
-      "value": "24",
-      "label": "Support services to forestry"
-    },
-    {
-      "value": "31",
-      "label": "Fishing"
-    },
-    {
-      "value": "32",
-      "label": "Aquaculture"
-    },
-    {
-      "value": "51",
-      "label": "Mining of hard coal"
-    },
-    {
-      "value": "52",
-      "label": "Mining of lignite"
-    },
-    {
-      "value": "61",
-      "label": "Extraction of crude petroleum"
-    },
-    {
-      "value": "62",
-      "label": "Extraction of natural gas"
-    },
-    {
-      "value": "71",
-      "label": "Mining of iron ores"
-    },
-    {
-      "value": "72",
-      "label": "Mining of non-ferrous metal ores"
-    },
-    {
-      "value": "81",
-      "label": "Quarrying of stone, sand and clay"
-    },
-    {
       "value": "89",
       "label": "Mining and quarrying n.e.c."
-    },
-    {
-      "value": "91",
-      "label": "Support activities for petroleum and natural gas extraction"
     },
     {
       "value": "99",
@@ -1248,10 +1160,6 @@ export const nicOptions = [
       "label": "Creative, arts and entertainment activities"
     },
     {
-      "value": "910",
-      "label": "Libraries, archives, museums and other cultural activities"
-    },
-    {
       "value": "920",
       "label": "Gambling and betting activities"
     },
@@ -1298,10 +1206,6 @@ export const nicOptions = [
     {
       "value": "982",
       "label": "Undifferentiated service-producing activities of private households for own use"
-    },
-    {
-      "value": "990",
-      "label": "Activities of extraterritorial organizations and bodies"
     },
     {
       "value": "111",
@@ -1468,16 +1372,8 @@ export const nicOptions = [
       "label": "Extraction of crude petroleum"
     },
     {
-      "value": "620",
-      "label": "Extraction of natural gas"
-    },
-    {
       "value": "710",
       "label": "Mining of iron ores"
-    },
-    {
-      "value": "721",
-      "label": "Mining of uranium and thorium ores"
     },
     {
       "value": "729",

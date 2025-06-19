@@ -9,7 +9,7 @@ import {
   StyleSheet,
   Platform,
 } from 'react-native';
-import { maskAadhaar } from '../../../utils/function';
+import { maskAadhaar, maskPassportNumber } from '../../../utils/function';
 import { districtOptions, localBodyOptions } from '../../../utils/variables';
 
 interface ViewModalProps {
@@ -150,13 +150,16 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, user, onClose }) => {
                       </Text>
                     ),
                   },
+                  ...(user.jobScope === 'abroad'
+                    ? [{ label: 'Passport Number', value: maskPassportNumber(user?.passportNumber) }]
+                    : []),
                   { label: 'Created By', value: user.createdBy?.name },
                   {
                     label: 'Created At',
                     value: new Date(user.createdAt).toLocaleString(),
                   },
                 ],
-              },
+              }
             ].map((section) => (
               <View key={section.title} style={styles.sectionCard}>
                 <Text style={styles.cardTitle}>{section.title}</Text>

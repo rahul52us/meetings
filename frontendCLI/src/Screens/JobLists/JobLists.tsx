@@ -466,7 +466,7 @@ const AgentIndex: React.FC = () => {
                 accessibilityLabel="Add single job"
                 accessibilityRole="button"
                 activeOpacity={0.85}>
-                <Text style={styles.buttonText}>👤 Add Single Agent</Text>
+                <Text style={styles.buttonText}>💼 Add Job</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -487,7 +487,7 @@ const AgentIndex: React.FC = () => {
                 accessibilityRole="button"
                 activeOpacity={0.85}>
                 <Text style={styles.buttonText}>
-                  📁 {bulkUploadLoading ? 'Uploading...' : 'Add Bulk Agents'}
+                  📁 {bulkUploadLoading ? 'Uploading...' : 'Add Bulk Jobs'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -710,6 +710,7 @@ const AgentIndex: React.FC = () => {
           fetchRecords={() =>
             handleGetUser(currentPage[activeTab], search[activeTab], activeTab)
           }
+          jobScope={activeTab}
         />
         {renderAddOptionsModal()}
       </SafeAreaView>
