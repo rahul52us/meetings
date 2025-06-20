@@ -94,6 +94,12 @@ const ViewModal = ({ isOpen, user, onClose }: any) => {
   const profile = user.profileDetails || {};
   const account = user.accountDetails || {};
 
+  const normalizeArray = (input: any): any[] => {
+    if (!input) return [];
+    if (Array.isArray(input)) return input;
+    return Object.values(input);
+  };
+
   const sections = [
     {
       key: 'personal',
@@ -170,10 +176,10 @@ const ViewModal = ({ isOpen, user, onClose }: any) => {
       key: 'education',
       title: 'Education',
       color: '#10B981',
-      data: profile.education?.length
-        ? profile.education.map((edu: any, idx: number) => ({
-            label: `#${idx + 1}: ${edu.degree} (${edu.stream})`,
-            value: `${edu.institutionName}, ${edu.location} (${edu.startDate} - ${edu.endDate})`,
+      data: normalizeArray(profile.education).length
+        ? normalizeArray(profile.education).map((edu: any, idx: number) => ({
+            label: `#${idx + 1}: ${edu.degree || 'Degree'} (${edu.stream || ''})`,
+            value: `${edu.institutionName || ''}, ${edu.location || ''} (${edu.startDate || 'N/A'} - ${edu.endDate || 'N/A'})`,
           }))
         : [{ label: 'Education', value: 'N/A' }],
     },
@@ -181,10 +187,10 @@ const ViewModal = ({ isOpen, user, onClose }: any) => {
       key: 'work',
       title: 'Work History',
       color: '#EC4899',
-      data: profile.workHistory?.length
-        ? profile.workHistory.map((work: any, idx: number) => ({
-            label: `#${idx + 1}: ${work.title} @ ${work.company}`,
-            value: `${work.location} (${work.startDate} - ${work.current ? 'Present' : work.endDate})`,
+      data: normalizeArray(profile.workHistory).length
+        ? normalizeArray(profile.workHistory).map((work: any, idx: number) => ({
+            label: `#${idx + 1}: ${work.title || 'Role'} @ ${work.company || 'Company'}`,
+            value: `${work.location || 'Location'} (${work.startDate || 'N/A'} - ${work.current ? 'Present' : work.endDate || 'N/A'})`,
           }))
         : [{ label: 'Work History', value: 'N/A' }],
     },
@@ -192,9 +198,9 @@ const ViewModal = ({ isOpen, user, onClose }: any) => {
       key: 'certifications',
       title: 'Certifications',
       color: '#8B5CF6',
-      data: profile.certifications?.length
-        ? profile.certifications.map((cert: any, idx: number) => ({
-            label: `#${idx + 1}: ${cert.name}`,
+      data: normalizeArray(profile.certifications).length
+        ? normalizeArray(profile.certifications).map((cert: any, idx: number) => ({
+            label: `#${idx + 1}: ${cert.name || 'Certificate'}`,
             value: `Issued: ${cert.issueDate || 'N/A'}`,
           }))
         : [{ label: 'Certifications', value: 'N/A' }],
@@ -203,10 +209,10 @@ const ViewModal = ({ isOpen, user, onClose }: any) => {
       key: 'skills',
       title: 'Skills',
       color: '#F43F5E',
-      data: profile.skills?.length
-        ? profile.skills.map((skill: any, idx: number) => ({
+      data: normalizeArray(profile.skills).length
+        ? normalizeArray(profile.skills).map((skill: any, idx: number) => ({
             label: `#${idx + 1}`,
-            value: skill,
+            value: typeof skill === 'string' ? skill : JSON.stringify(skill),
           }))
         : [{ label: 'Skills', value: 'N/A' }],
     },
@@ -223,9 +229,7 @@ const ViewModal = ({ isOpen, user, onClose }: any) => {
         {
           label: 'Referral Letter',
           value: getShortName(user.referralLetterDetails?.[0]?.filename),
-          onPress: user.referralLetterDetails?.[0]?._id
-            ? () => openFileViewer(user.referralLetterDetails?.[0])
-            : undefined,
+          onPress: user.referralLetterDetails?.[0]?._id ? () => openFileViewer(user.referralLetterDetails?.[0]) : undefined,
         },
       ],
     },
@@ -239,7 +243,14 @@ const ViewModal = ({ isOpen, user, onClose }: any) => {
             styles.modalContent,
             {
               opacity: modalFadeAnim,
-              transform: [{ scale: modalFadeAnim.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] }) }],
+              transform: [
+                {
+                  scale: modalFadeAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.95, 1],
+                  }),
+                },
+              ],
             },
           ]}
         >
@@ -267,16 +278,22 @@ const ViewModal = ({ isOpen, user, onClose }: any) => {
                         key={index}
                         style={[
                           styles.detailRow,
-                          ['education', 'work', 'certifications'].includes(section.key) && styles.detailRowVertical,
+                          ['education', 'work', 'certifications'].includes(section.key) &&
+                            styles.detailRowVertical,
                         ]}
                       >
                         <Text style={styles.detailLabel}>{item.label}</Text>
                         {item.onPress ? (
                           <TouchableOpacity onPress={item.onPress}>
-                            <Text style={[styles.detailValue, { color: '#319795' }]}>{item.value}</Text>
+                            <Text style={[styles.detailValue, { color: '#319795' }]}>...
+                            {renderSafeValue(item.value)}</Text>
                           </TouchableOpacity>
                         ) : (
-                          <Text style={[styles.detailValue, item.color && { color: item.color }]}>{item.value || 'N/A'}</Text>
+                          <Text
+                            style={[styles.detailValue, item.color && { color: item.color }]}
+                          >
+                            {renderSafeValue(item.value)}
+                          </Text>
                         )}
                       </View>
                     ))}
@@ -287,17 +304,37 @@ const ViewModal = ({ isOpen, user, onClose }: any) => {
           </ScrollView>
 
           <View style={styles.modalFooter}>
-            <Pressable style={[styles.button, styles.cancelButton]} onPress={handleClose}>
+            <Pressable
+              style={[styles.button, styles.cancelButton]}
+              onPress={handleClose}
+            >
               <Text style={styles.cancelButtonText}>Close</Text>
             </Pressable>
           </View>
         </Animated.View>
 
-        <FileViewerModal isOpen={isFileViewerOpen} onClose={closeFileViewer} file={selectedFileId ?? ''} />
+        <FileViewerModal
+          isOpen={isFileViewerOpen}
+          onClose={closeFileViewer}
+          file={selectedFileId ?? ''}
+        />
       </View>
     </Modal>
   );
 };
+
+const renderSafeValue = (value: any) => {
+  if (value === null || value === undefined) return 'N/A';
+  if (typeof value === 'string' || typeof value === 'number') return value;
+  if (typeof value === 'object') {
+    if ('text' in value && 'hyperlink' in value) {
+      return `${value.text} (${value.hyperlink})`;
+    }
+    return JSON.stringify(value);
+  }
+  return String(value);
+};
+
 
 const styles = StyleSheet.create({
   modalContainer: {
